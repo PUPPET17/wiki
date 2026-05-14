@@ -1,0 +1,201 @@
+name: Wiki Maintenance
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "Operation to run"
+        required: true
+        default: "status"
+        type: choice
+        options:
+          - status
+          - validate
+          - refresh-index
+      commit_changes:
+        description: "Commit and push changes produced by refresh-index"
+        required: true
+        default: true
+        type: boolean
+  pull_request:
+    paths:
+      - "**/*.md"
+      - ".github/workflows/wiki-maintenance.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "**/*.md"
+      - ".github/workflows/wiki-maintenance.yml"
+
+permissions:
+  contents: write
+  pull-requests: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  wiki:
+    name: Wiki ${{ github.event.inputs.task || 'validate' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Show repository status
+        if: ${{ github.event.inputs.task == 'status' }}
+        run: |
+          echo "Repository: $GITHUB_REPOSITORY"
+          echo "Branch: ${GITHUB_REF_NAME:-unknown}"
+          echo "Commit: $GITHUB_SHA"
+          echo
+          echo "Markdown files:"
+          find . -type f -name '*.md' -not -path './.git/*' | sort
+
+      - name: Validate wiki structure
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.task == 'validate' || github.event.inputs.task == 'refresh-index' }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          import sys
+
+          root = Path('.')
+          errors = []
+          warnings = []
+
+          required = ['SCHEMA.md', 'index.md', 'log.md', 'raw', 'concepts', 'entities', 'comparisons', 'queries']
+          for item in required:
+              if not (root / item).exists():
+                  errors.append(f"Missing required path: {item}")
+
+          name_re = re.compile(r'^[a-z0-9][a-z0-9-]*\.md$')
+          for path in root.rglob('*.md'):
+              if '.git' in path.parts or path.name in {'README.md', 'SCHEMA.md'}:
+                  continue
+              if path.name != path.name.lower() or ' ' in path.name or not name_re.match(path.name):
+                  errors.append(f"Invalid markdown filename: {path}")
+
+          for base in ['concepts', 'entities', 'comparisons', 'queries']:
+              d = root / base
+              if not d.exists():
+                  continue
+              for path in d.rglob('*.md'):
+                  text = path.read_text(encoding='utf-8')
+                  if not text.startswith('---\n'):
+                      errors.append(f"Missing YAML frontmatter: {path}")
+                      continue
+                  parts = text.split('---\n', 2)
+                  if len(parts) < 3:
+                      errors.append(f"Malformed YAML frontmatter: {path}")
+                      continue
+                  fm = parts[1]
+                  for key in ['title:', 'created:', 'updated:', 'type:', 'tags:', 'sources:', 'confidence:', 'contested:']:
+                      if key not in fm:
+                          errors.append(f"Missing frontmatter key {key} in {path}")
+                  if 'Source Map' not in text:
+                      warnings.append(f"No Source Map section found: {path}")
+
+          raw_count = len(list((root / 'raw').rglob('*.md'))) if (root / 'raw').exists() else 0
+          concept_count = len(list((root / 'concepts').rglob('*.md'))) if (root / 'concepts').exists() else 0
+          print(f"Raw source files: {raw_count}")
+          print(f"Concept pages: {concept_count}")
+
+          for warning in warnings:
+              print(f"warning: {warning}")
+          if errors:
+              print('\nValidation failed:')
+              for error in errors:
+                  print(f"- {error}")
+              sys.exit(1)
+          print('Validation passed.')
+          PY
+
+      - name: Refresh index
+        if: ${{ github.event.inputs.task == 'refresh-index' }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          from datetime import date
+
+          root = Path('.')
+          sections = [
+              ('Core Research Documents', root / 'concepts'),
+              ('Entities', root / 'entities'),
+              ('Concepts', root / 'concepts'),
+              ('Comparisons', root / 'comparisons'),
+              ('Queries', root / 'queries'),
+          ]
+
+          def parse_page(path):
+              text = path.read_text(encoding='utf-8')
+              title = path.stem.replace('-', ' ').title()
+              summary = ''
+              if text.startswith('---\n'):
+                  parts = text.split('---\n', 2)
+                  if len(parts) >= 3:
+                      fm = parts[1]
+                      m = re.search(r'^title:\s*(.+)$', fm, re.M)
+                      if m:
+                          title = m.group(1).strip().strip('"')
+                      body = parts[2]
+                  else:
+                      body = text
+              else:
+                  body = text
+              for line in body.splitlines():
+                  s = line.strip()
+                  if not s or s.startswith('#') or s.startswith('>') or s.startswith('---'):
+                      continue
+                  summary = re.sub(r'^[*-]\s*', '', s)
+                  break
+              return title, summary[:180]
+
+          lines = [
+              '# Wiki Index',
+              '',
+              '> Content catalog. Every wiki page listed under its type with a one-line summary.',
+              f'> Last updated: {date.today().isoformat()}',
+              '',
+          ]
+
+          seen = set()
+          for heading, directory in sections:
+              lines.append(f'## {heading}')
+              if directory.exists():
+                  for path in sorted(directory.rglob('*.md')):
+                      if heading == 'Core Research Documents' and path.name != 'llm-wiki-agent-memory-research-framework.md':
+                          continue
+                      if heading == 'Concepts' and path.name == 'llm-wiki-agent-memory-research-framework.md':
+                          continue
+                      key = (heading, path)
+                      if key in seen:
+                          continue
+                      seen.add(key)
+                      title, summary = parse_page(path)
+                      link = path.with_suffix('').as_posix()
+                      lines.append(f'- [[{link}|{title}]]' + (f' — {summary}' if summary else ''))
+              lines.append('')
+
+          Path('index.md').write_text('\n'.join(lines).rstrip() + '\n', encoding='utf-8')
+          print('Refreshed index.md')
+          PY
+
+      - name: Commit refreshed index
+        if: ${{ github.event.inputs.task == 'refresh-index' && github.event.inputs.commit_changes == 'true' }}
+        run: |
+          if git diff --quiet -- index.md; then
+            echo "No index changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.md
+          git commit -m "chore: refresh wiki index"
+          git push
