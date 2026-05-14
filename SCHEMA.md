@@ -15,6 +15,7 @@ LLM Wiki / Agent Memory / Context Compression / Knowledge Integration research a
 - Raw sources must preserve parsed original/source text whenever accessible, not only source_url and extracted claims. A raw file may include analysis notes, but those must appear after the preserved source text and be clearly labeled.
 - If extraction is blocked, truncated, or only summarized by tooling, mark `raw_preservation` and `extraction_status` explicitly and schedule a later full-text/PDF/API retrieval pass.
 - Every update must append to log.md.
+- Every file change must be synchronized through the wiki git repository: check `git status`, stage relevant files, commit with a clear message, and push if a remote is configured/available. If push is not possible, report the local commit hash and reason.
 
 ## Required Research Document Sections
 Executive Summary

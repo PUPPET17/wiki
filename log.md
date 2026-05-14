@@ -18,3 +18,13 @@
 - Updated SCHEMA.md to require parsed original/source text whenever accessible, with explicit raw_preservation / extraction_status marking when blocked, truncated, or summarized.
 - Rewrote existing raw source files to include `## Parsed Source Text` sections from fetched/extracted markdown where accessible.
 - Important caveat: web_extract often returns capped/summarized markdown for long sources; these files are now marked `tool_parsed_or_summarized_text` where appropriate and should be upgraded with full PDF/API/browser extraction in later passes.
+
+## [2026-05-14] upgrade | Raw source full-text pass
+- Upgraded 7 arXiv paper raw sources to `raw_preservation: full_pdf_text` using arXiv PDFs + PyMuPDF page text extraction: MemGPT, Generative Agents, CoALA, RAG Survey, RAPTOR, Self-RAG, MemoRAG.
+- Upgraded 8 web/blog/product sources to `raw_preservation: full_html_article_text_candidate` using readability-lxml + html2text. These are candidate full article text because site-rendered dynamic content may still omit hidden sections.
+- Upgraded 3 Hacker News discussions to full comment-tree text: HN Karpathy-style wiki via Algolia API (115 comments), HN MemGPT via Firebase API (106 comments), HN Letta Code via Firebase API (37 comments).
+- Remaining gap: Reddit LocalLLaMA memory thread remains `extraction_blocked`; full thread still needs browser/API/archive/manual export.
+
+## [2026-05-14] update | Git synchronization requirement
+- User requested that future changes be synchronized through the git repository.
+- Updated SCHEMA.md to require checking git status, staging relevant files, committing with a clear message, and pushing when a remote is configured/available.

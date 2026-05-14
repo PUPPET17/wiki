@@ -5,11 +5,14 @@ source_type: product-docs
 author: Letta
 source_date: captured 2026-05-14
 ingested: 2026-05-14
-sha256: 1ea16ba70fe11c99bb68212aa62d0bae24068d59f764e3f2fc9a2f03d0e3fbdd
-raw_preservation: tool_parsed_or_summarized_text
+sha256: 5b9010a2cf6fb0732c428aff7680ca0130e53a28edea17643bc58627679c2970
+raw_preservation: full_html_article_text_candidate
+extraction_method: readability_lxml_html2text
+html_bytes: 93833
+parsed_chars: 5257
 ---
 
-# Letta Memory 2026
+# Memory | Letta Docs
 
 ## Source Metadata
 
@@ -20,205 +23,60 @@ raw_preservation: tool_parsed_or_summarized_text
 - Source date: captured 2026-05-14
 - Ingested: 2026-05-14
 - Reliability: high
-- Raw preservation status: tool_parsed_or_summarized_text
-- Extraction note: Parsed source text is preserved below where accessible. If extraction tooling returned a summary/truncated representation, this is explicitly marked and should be replaced by fuller text in a later pass.
+- Raw preservation status: full_html_article_text_candidate
+- Extraction method: readability_lxml_html2text
 
 ## Parsed Source Text
 
-# Memory — Letta Docs Summary
+With Letta Code, you use the same agent indefinitely - across sessions, days, or months - and have it get better over time. Your agent remembers past interactions, learns your preferences, and self-edits its memory as it works.
 
-Source: <https://docs.letta.com/letta-code/memory>
+Letta Code also allows you to customize your agent’s personality. With Claude Code or Codex, every user gets the same agent that acts identically. With Letta Code, you can deeply personalize your agents to be unique to _you_.
 
-## Overview
+In Letta Code, there are two important session concepts: **agents** and **conversations**.
 
-Letta Code provides a **self-improving memory system** where you use the same agent indefinitely across sessions, days, or months. The agent can:
+  * An **agent** is an entity with a name, memories, a model configuration, messages, and other state.
+  * A **conversation** is a message thread (or “session”) with an agent. You can have many parallel conversations with a single agent. Every agent also has a “default conversation” or “main chat”.
 
-- Remember past interactions
-- Learn user preferences
-- Self-edit its own memory while working
-- Improve over time
-- Maintain personalized behavior and identity
+When you run the `letta` CLI command in a project directory, Letta Code resumes the default conversation with your last used agent. In the Letta Code desktop app, the left sidebar is sorted by agents, and you can see conversations sorted by activity date.
 
-Unlike Claude Code or Codex, where users generally interact with the same standardized agent behavior, Letta Code supports **deep personalization** of agents.
+If you want to run many CLI sessions with a single agent in parallel (eg in separate terminal windows), use `letta --new` to start a new conversation. In the desktop app, simply press the notepad icon to start a new conversation.
 
-> With Letta Code, you use the same agent indefinitely - across sessions, days, or months - and have it get better over time.
+Letta Code has a default agent pre-installed (called “Letta Code”). To swap agents in the CLI, use `/agents`. You can favorite an agent in the CLI with “/pin”, or by clicking the favorites button in the desktop app.
 
-> With Letta Code, you can deeply personalize your agents to be unique to _you_.
+When you run `/init`, Letta Code performs an interactive initialization in the main conversation, guided by context constitution principles for durable identity, preferences, and project structure. Letta Code will read from prior Claude Code and OpenAI Codex sessions to learn about your working style and past + ongoing projects using [subagents](/letta-code/subagents).
 
----
+Run `/init` again whenever you want the agent to re-analyze your project, such as after major changes or adding documentation that you want the agent to ingest.
 
-## Agents and Conversations
+If your memory structure has drifted or become messy over time, run `/doctor` to audit the current memory layout and refine it for proper memory placement and efficient token usage.
 
-Letta Code has two core session concepts:
+Your Letta Code agent can self-edit its own memory, and will use the context of the conversation to decide when to edit its memory (for example, to store new information learned in a session). In some cases, you may want to actively direct your agent to remember something via the `/remember` command.
 
-### Agent
+For example, if you noticed your agent made an easily avoidable mistake, you can give direct guidance:
 
-An **agent** is an entity with:
+    > /remember not to make that mistake again
 
-- A name
-- Memories
-- A model configuration
-- Messages
-- Other persistent state
+You can also use the `/remember` command without any extra prompting, and the agent will infer your intent from the context to make a memory edit.
 
-### Conversation
+If your agent is not consistently remembering important information, ask the agent to update its policies to be more diligent in the future, and communicate what information you expect it to store. For example, “Actively store information about my preferences, decisions, and anything I explicitly ask you to remember.”
 
-A **conversation** is a message thread or session with an agent.
+To improve proactive memory creation and consolidation, Letta Code launches periodic sleep-time (dream) subagents to reflect on your recent conversations and interactions. These agents are launched in the background, and generally run for many steps since the subagents are thorough memory editors.
 
-Key details:
+You can use the `/sleeptime` command in the CLI to configure your reflection settings, or by clicking the sleeping alien icon in the bottom-right of the app.
 
-- A single agent can have many parallel conversations.
-- Every agent has a **default conversation**, also called the **main chat**.
-- Running the `letta` CLI command inside a project directory resumes the default conversation with the last used agent.
-- In the desktop app, the left sidebar is sorted by agents, with conversations sorted by activity date.
+The **trigger** determines how often the reflection subagent is auto-launched:
 
-### Starting Parallel CLI Sessions
+  * `Off`: select to disable reflection subagents
+  * `Step count`: launch a reflection subagent every N user messages
+  * `Compaction event` (recommended, MemFS only): launch a reflection subagent when the context window is compacted / summarized
 
-To run multiple CLI sessions with the same agent in parallel, such as in separate terminal windows:
+When a dream trigger fires, Letta Code launches the dream subagent in the background automatically.
 
-```bash
-letta --new
-```
+MemFS ([context repositories](https://www.letta.com/blog/context-repositories)) is available in Letta Code version 0.15 and later. All new agents have MemFS enabled by default.
 
-In the desktop app, start a new conversation by pressing the **notepad icon**.
+To enable MemFS on an older agent, run `/memfs enable`.
 
-### Managing Agents
+Your agent’s memory is stored in a git-backed filesystem called **MemFS** (short for “memory filesystem”), also known as a [context repository](https://www.letta.com/blog/context-repositories). Memory is organized as a directory of markdown files, cloned locally to `~/.letta/agents/<your-agent-id>/memory`. Your agent edits these files directly using its bash tools, then commits and pushes to save changes — giving you a full version history of everything your agent has learned.
 
-Letta Code includes a default pre-installed agent called **“Letta Code.”**
+Files in the `system/` directory are always loaded in full into the agent’s system prompt. Files outside `system/` are visible to the agent via the memory tree (filenames and descriptions), but their contents are not automatically loaded — keeping the context window lean.
 
-Useful commands and actions:
-
-- Swap agents in the CLI:
-
-```bash
-/agents
-```
-
-- Favorite an agent in the CLI:
-
-```bash
-/pin
-```
-
-- Favorite an agent in the desktop app by clicking the favorites button.
-
----
-
-## Initializing Your Agent’s Memory
-
-Use `/init` to initialize or refresh the agent’s memory in the main conversation.
-
-```bash
-/init
-```
-
-During initialization, Letta Code performs an interactive process guided by **context constitution principles** for:
-
-- Durable identity
-- User preferences
-- Project structure
-
-Letta Code can also read from prior **Claude Code** and **OpenAI Codex** sessions to learn about:
-
-- Your working style
-- Past projects
-- Ongoing projects
-
-This is done using Letta Code [subagents](https://docs.letta.com/letta-code/subagents).
-
-### When to Run `/init` Again
-
-Run `/init` again when you want the agent to re-analyze your project, such as after:
-
-- Major project changes
-- Adding important documentation
-- Introducing new information you want the agent to ingest
-
-### Auditing Memory with `/doctor`
-
-If the memory structure becomes messy or drifts over time, use:
-
-```bash
-/doctor
-```
-
-`/doctor` audits the current memory layout and refines it for:
-
-- Proper memory placement
-- Efficient token usage
-
----
-
-## Manually Triggering Memory Updates
-
-Letta Code agents can self-edit memory automatically based on conversation context. For example, the agent may store new information learned during a session.
-
-You can also explicitly direct the agent to remember something using:
-
-```bash
-/remember
-```
-
-Example:
-
-```text
-> /remember not to make that mistake again
-```
-
-You can also run `/remember` without extra prompting. In that case, the agent infers your intent from the current conversation context and makes an appropriate memory edit.
-
----
-
-## Configuring Dreaming / Reflection
-
-Letta Code supports proactive memory creation and consolidation through periodic **sleep-time**, or **dream**, subagents.
-
-These reflection subagents:
-
-- Run in the background
-- Review recent conversations and interactions
-- Perform thorough memory editing
-- May run for many steps because they are designed to be comprehensive
-
-### Configure Reflection
-
-In the CLI, use:
-
-```bash
-/sleeptime
-```
-
-In the desktop app, click the **sleeping alien icon** in the bottom-right corner.
-
-### Dream Trigger Options
-
-The **trigger** controls how often reflection subagents are automatically launched:
-
-- `Off`: disables reflection subagents
-- `Step count`: launches a reflection subagent every N user messages
-- `Compaction event` **recommended, MemFS only**: launches a reflection subagent when the context window is compacted or summarized
-
-When a dream trigger fires, Letta Code automatically launches the dream subagent in the background.
-
----
-
-## How Letta Code’s Memory System Works
-
-Letta Code stores agent memory in **MemFS**, short for **memory filesystem**.
-
-MemFS is:
-
-- A git-backed filesystem
-- Also called a [context repository](https://www.letta.com/blog/context-repositories)
-- Organized as a directory of markdown files
-- Cloned locally to:
-
-```text
-~/.letta/agents/<your-agent-id>/memory
-```
-
-The agent edits memory files directly using bash tools, then commits and pushes changes to save them.
-
-This 
-
-[... summary truncated for context management ...]
+For a full explanation of the MemFS file format, the `system/` hierarchy, git synchronization, and the `letta memory` CLI subcommands, see the [MemFS reference](/letta-code/memfs).
