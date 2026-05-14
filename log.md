@@ -28,3 +28,11 @@
 ## [2026-05-14] update | Git synchronization requirement
 - User requested that future changes be synchronized through the git repository.
 - Updated SCHEMA.md to require checking git status, staging relevant files, committing with a clear message, and pushing when a remote is configured/available.
+
+## [2026-05-15] ingest | GitHub issue/repo evidence for agent memory systems
+- Added raw GitHub sources under raw/github/:
+  - mem0 issue #4573 production memory audit: 10,134 entries, reported 97.8% junk, feedback-loop amplification, quality-gate recommendations.
+  - LettaBot issue #652: per-conversation context scoping for MemFS/memory blocks.
+  - README snapshots for mem0, Letta Code, WUPHF, llm-wiki-compiler, LangChain context_engineering, and LangChain how_to_fix_your_context.
+- Updated concepts/llm-wiki-agent-memory-research-framework.md with new GitHub-backed evidence on memory failure modes, context scoping, existing projects, ingestion quality gates, and Source Map rows.
+- Updated index.md summary.

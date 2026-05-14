@@ -1,10 +1,10 @@
 ---
 title: LLM Wiki / Agent Memory Research Framework
 created: 2026-05-14
-updated: 2026-05-14
+updated: 2026-05-15
 type: concept
 tags: [llm-wiki, agent-memory, rag, context-engineering, knowledge-integration, personal-ai-os, memory-architecture, retrieval, compression, indexing, tradeoff, failure-case, opportunity]
-sources: [raw/articles/karpathy-llm-wiki-gist-2026.md, raw/papers/memgpt-2023.md, raw/papers/generative-agents-2023.md, raw/papers/coala-2023.md, raw/papers/rag-survey-2023.md, raw/articles/anthropic-effective-agents-2024.md, raw/articles/anthropic-multi-agent-research-2025.md, raw/articles/langchain-context-engineering-2025.md, raw/articles/harrison-chase-sequoia-context-engineering-2025.md, raw/articles/simon-willison-embeddings-2023.md, raw/articles/microsoft-vector-search-not-enough-2024.md, raw/community/hn-karpathy-style-wiki-2026.md, raw/community/hn-memgpt-2023.md, raw/community/hn-letta-code-2025.md, raw/product-docs/openai-chatgpt-memory-2024-2025.md, raw/product-docs/letta-memory-2026.md, raw/papers/raptor-2024.md, raw/papers/self-rag-2023.md, raw/papers/memorag-2024.md, raw/community/reddit-memory-systems-2026.md]
+sources: [raw/articles/karpathy-llm-wiki-gist-2026.md, raw/papers/memgpt-2023.md, raw/papers/generative-agents-2023.md, raw/papers/coala-2023.md, raw/papers/rag-survey-2023.md, raw/articles/anthropic-effective-agents-2024.md, raw/articles/anthropic-multi-agent-research-2025.md, raw/articles/langchain-context-engineering-2025.md, raw/articles/harrison-chase-sequoia-context-engineering-2025.md, raw/articles/simon-willison-embeddings-2023.md, raw/articles/microsoft-vector-search-not-enough-2024.md, raw/community/hn-karpathy-style-wiki-2026.md, raw/community/hn-memgpt-2023.md, raw/community/hn-letta-code-2025.md, raw/product-docs/openai-chatgpt-memory-2024-2025.md, raw/product-docs/letta-memory-2026.md, raw/papers/raptor-2024.md, raw/papers/self-rag-2023.md, raw/papers/memorag-2024.md, raw/community/reddit-memory-systems-2026.md, raw/github/mem0-issue-4573-memory-audit-junk.md, raw/github/letta-issue-652-per-conversation-context-scoping.md, raw/github/mem0-repo-readme.md, raw/github/letta-code-repo-readme.md, raw/github/wuphf-repo-readme.md, raw/github/llm-wiki-compiler-repo-readme.md, raw/github/langchain-context-engineering-repo-readme.md, raw/github/langchain-how-to-fix-your-context-readme.md]
 confidence: medium
 contested: true
 ---
@@ -90,8 +90,12 @@ Tradeoff: more moving parts than plain markdown; much better retrieval robustnes
 
 - Karpathy LLM Wiki idea file: primary conceptual seed; no fixed implementation. [raw/articles/karpathy-llm-wiki-gist-2026.md]
 - MemGPT / Letta: OS-inspired virtual context and memory-first agents. [raw/papers/memgpt-2023.md] [raw/product-docs/letta-memory-2026.md]
-- Letta Code / MemFS: git-backed markdown memory filesystem, /init, /remember, /doctor, sleep-time reflection. [raw/product-docs/letta-memory-2026.md]
-- WUPHF: HN-described markdown+git wiki layer with BM25/SQLite, draft promotion, append-only facts, daily lint. Reliability medium until repo is independently inspected. [raw/community/hn-karpathy-style-wiki-2026.md]
+- Letta Code / MemFS: long-lived coding agents with portable memory across models; `/init`, `/remember`, `/clear`, and skill learning. The repo frames the difference from Claude Code/Codex/Gemini CLI as agent-based persistence vs independent sessions. [raw/product-docs/letta-memory-2026.md] [raw/github/letta-code-repo-readme.md]
+- LettaBot context-scoping issue: a concrete design discussion showing that agent-level memory blocks and MemFS files become privacy, attention, and token-cost problems when reused identically across conversations. Proposed solution: conversation-level context include/exclude or per-file frontmatter scoping. [raw/github/letta-issue-652-per-conversation-context-scoping.md]
+- WUPHF: independently inspected repo README confirms a local/self-hosted “collaborative office” with per-agent notebook + shared workspace wiki, git-native markdown memory, fresh sessions, per-agent scoped tools, and claimed flat-token/caching economics. [raw/community/hn-karpathy-style-wiki-2026.md] [raw/github/wuphf-repo-readme.md]
+- llm-wiki-compiler: direct Karpathy-pattern implementation with `ingest`, `compile`, `query`, `query --save`, `lint`, `watch`, `serve` MCP, review queue, claim-level provenance markers, page metadata, and line-range citations. It explicitly notes limitations: early software, best for small high-signal corpora, index-based routing, and honest truncation metadata. [raw/github/llm-wiki-compiler-repo-readme.md]
+- Mem0: universal memory layer project with production-oriented claims: single-pass ADD-only extraction, entity linking, multi-signal retrieval, temporal reasoning, and open evaluation framework. However, the GitHub issue audit below provides a severe counterexample for memory quality. [raw/github/mem0-repo-readme.md] [raw/github/mem0-issue-4573-memory-audit-junk.md]
+- LangChain context-engineering repos: runnable notebooks implementing write/select/compress/isolate, plus “How to Fix Your Context” examples for RAG, tool loadout, context quarantine, context pruning, context summarization, and context offloading. [raw/github/langchain-context-engineering-repo-readme.md] [raw/github/langchain-how-to-fix-your-context-readme.md]
 - LangMem: SDK framing semantic, episodic, procedural memory and namespaces. [raw/articles/langchain-context-engineering-2025.md]
 - OpenAI ChatGPT Memory: productized saved memories and chat-history personalization with controls. [raw/product-docs/openai-chatgpt-memory-2024-2025.md]
 
@@ -106,6 +110,10 @@ Evidence-backed consensus:
 3. Agent systems should start simple. Anthropic explicitly advises simple composable patterns and adding complexity only when outcomes improve. [raw/articles/anthropic-effective-agents-2024.md]
 
 4. Long-horizon agents need traces/context observability. Harrison Chase argues traces reveal what context entered each step. [raw/articles/harrison-chase-sequoia-context-engineering-2025.md]
+
+5. Indiscriminate memory storage is worse than no memory for some production settings. A mem0 production audit reported 10,134 entries over 32 days with only 224 survivors after audit, and argued that the bottleneck was extraction/storage policy rather than model capability alone. Treat as a single-user production case study, not universal statistics. [raw/github/mem0-issue-4573-memory-audit-junk.md]
+
+6. Context scoping is not optional for multi-conversation agents. LettaBot issue #652 describes privacy leaks, attention pollution, and token waste when agent-level memory is pinned identically into unrelated conversations. [raw/github/letta-issue-652-per-conversation-context-scoping.md]
 
 Reddit consensus: unknown. Relevant threads exist, but evidence is insufficient because extraction failed. [raw/community/reddit-memory-systems-2026.md]
 
@@ -141,13 +149,19 @@ Synthesis: call the MVP a personal knowledge substrate or memory filesystem. Res
 
 2. Memory garbage accumulation: community concern in HN Letta thread about ChatGPT memory filling with useless or incorrect statements. [raw/community/hn-letta-code-2025.md]
 
-3. Vector-only retrieval misses exact facts: Microsoft example where vector search failed to retrieve exact price `$45.00`. [raw/articles/microsoft-vector-search-not-enough-2024.md]
+3. Production memory junk at scale: mem0 issue #4573 reports a 32-day production audit where 97.8% of 10,134 entries were judged junk, including boot-file restating, heartbeat/cron noise, system architecture dumps, transient task state, hallucinated user profiles, identity confusion, and sensitive operational leakage. Reliability: medium because it is a single GitHub issue/case study, but it is detailed and includes comments with proposed mitigations. [raw/github/mem0-issue-4573-memory-audit-junk.md]
 
-4. Summary drift: repeated summarization can erase nuance or source caveats. Supported indirectly by need for raw source provenance; specific benchmark unknown. Status: plausible engineering risk, insufficient direct evidence.
+4. Feedback-loop amplification: the same mem0 audit reports a hallucinated “User prefers Vim” memory being re-extracted repeatedly after appearing in recall context, producing hundreds of copies. This is a concrete example of memory poisoning becoming self-reinforcing when recalled memories are not marked separately from new user input. [raw/github/mem0-issue-4573-memory-audit-junk.md]
 
-5. Over-agentic complexity: Anthropic warns agents add cost, latency, complexity, and compounding errors. [raw/articles/anthropic-effective-agents-2024.md]
+5. Better extraction model does not automatically fix memory quality: the mem0 audit reports switching from a 2B local model to Claude Sonnet reduced some hallucinations but caused faithful over-extraction of system architecture and operational details because the prompt/pipeline remained permissive. Engineering implication: storage policy and quality gates matter as much as model quality. [raw/github/mem0-issue-4573-memory-audit-junk.md]
 
-6. AI-slop knowledge base: HN discussion about an AI-generated Show HN post shows community skepticism when generated synthesis lacks structure, proofreading, or clear authorship. [raw/community/hn-karpathy-style-wiki-2026.md]
+6. Vector-only retrieval misses exact facts: Microsoft example where vector search failed to retrieve exact price `$45.00`. [raw/articles/microsoft-vector-search-not-enough-2024.md]
+
+7. Summary drift: repeated summarization can erase nuance or source caveats. Supported indirectly by need for raw source provenance; specific benchmark unknown. Status: plausible engineering risk, insufficient direct evidence.
+
+8. Over-agentic complexity: Anthropic warns agents add cost, latency, complexity, and compounding errors. [raw/articles/anthropic-effective-agents-2024.md]
+
+9. AI-slop knowledge base: HN discussion about an AI-generated Show HN post shows community skepticism when generated synthesis lacks structure, proofreading, or clear authorship. [raw/community/hn-karpathy-style-wiki-2026.md]
 
 # Engineering Constraints
 
@@ -157,7 +171,9 @@ Synthesis: call the MVP a personal knowledge substrate or memory filesystem. Res
 - Source provenance: every synthesis must trace to raw source; otherwise memory becomes unverifiable.
 - Concurrency: multiple agents editing markdown can conflict; git branches/PRs or locks are needed.
 - Privacy: personal memory needs namespaces, deletion, temporary/no-memory mode, and audit. [raw/product-docs/openai-chatgpt-memory-2024-2025.md]
-- Model dependency: frontier models still outperform local models for nuanced synthesis, contradiction detection, and careful writing. Local models can handle indexing, clustering, simple extraction, and draft summaries.
+- Context scope: memory and tool context must be scoped by conversation, channel, user, project, or task. Agent-global pinned memory becomes privacy risk, attention pollution, and unnecessary token cost in multi-conversation systems. [raw/github/letta-issue-652-per-conversation-context-scoping.md]
+- Extraction/storage quality gates: memory candidates need negative examples, reject actions, provenance awareness, role preservation, significance scoring, and feedback-loop prevention before storage. [raw/github/mem0-issue-4573-memory-audit-junk.md]
+- Model dependency: frontier models still outperform local models for nuanced synthesis, contradiction detection, and careful writing. Local models can handle indexing, clustering, simple extraction, and draft summaries, but better models do not fix bad memory pipelines by themselves. [raw/github/mem0-issue-4573-memory-audit-junk.md]
 
 # Practical Integration Blueprint
 
@@ -203,13 +219,15 @@ Observe -> capture raw -> extract facts -> integrate wiki -> retrieve for tasks 
 ## Ingestion Pipeline
 
 Prototype:
-- web_extract / manual clipping -> raw markdown
+- full raw capture / manual clipping -> raw markdown
 - LLM summary -> one concept page
 - update index/log manually
 
 MVP:
 - deterministic raw frontmatter and hashes
 - extraction prompt for claims/entities
+- negative examples for what NOT to store
+- REJECT / DO_NOT_STORE action before persistence
 - existing-page search before writing
 - source map table updates
 - citation verifier pass
@@ -217,6 +235,9 @@ MVP:
 Scalable:
 - queue-based ingestion
 - chunk/source span IDs
+- role-preserving extraction context so user/system/assistant/tool/recalled-memory content are not flattened together
+- explicit marking of recalled memories so they cannot be re-extracted as new facts
+- candidate-memory quality gate with significance, confidence, privacy, and staleness scoring
 - batch fact extraction
 - human review UI for high-impact changes
 - CI lint on PRs
@@ -275,6 +296,8 @@ Scalable:
 - Require explicit user-visible memory changes for personal facts.
 - Provide ask/forget/export controls similar to OpenAI's product controls. [raw/product-docs/openai-chatgpt-memory-2024-2025.md]
 - Namespaces prevent leakage across users/projects, as LangMem recommends. [raw/articles/langchain-context-engineering-2025.md]
+- Add conversation/channel/project scoping for pinned memory files and memory blocks; default-deny unrelated user profiles and project files. [raw/github/letta-issue-652-per-conversation-context-scoping.md]
+- Treat assistant-generated facts, recalled memories, system prompts, and tool outputs differently from direct user assertions; do not store them with equal confidence unless confirmed. [raw/github/mem0-issue-4573-memory-audit-junk.md]
 
 # MVP Plan
 
@@ -423,10 +446,17 @@ Will be swallowed by foundation models:
 | Adaptive retrieval | Fixed top-k retrieval can hurt; model should decide when to retrieve/critique | https://arxiv.org/abs/2310.11511 | paper | high | Self-RAG |
 | Long context | Conventional RAG assumes explicit queries/well-structured knowledge; often false | https://arxiv.org/abs/2409.05591 | paper | high | MemoRAG |
 | Reddit memory practice | Relevant LocalLLaMA memory thread exists but extraction blocked | https://www.reddit.com/r/LocalLLaMA/comments/1r21ojm/weve_built_memory_into_4_different_agent_systems/ | reddit | low | insufficient evidence; do not rely yet |
+| Memory failure | Production mem0 audit reports 97.8% junk memories after 32 days and 10,134 entries | https://github.com/mem0ai/mem0/issues/4573 | github issue | medium | Single case study; detailed enough to inform failure modes and mitigations |
+| Memory failure | Recalled memories must be marked so extraction does not re-store them as new facts | https://github.com/mem0ai/mem0/issues/4573 | github issue | medium | Explains feedback-loop amplification; cross-links to context poisoning |
+| Memory design | Agent-global memory blocks create privacy, attention, and token-cost problems across conversations | https://github.com/letta-ai/lettabot/issues/652 | github issue | medium-high | Direct design issue from LettaBot; no comments but concrete proposal |
+| LLM Wiki implementation | llm-wiki-compiler implements ingest/compile/query/lint/watch/MCP/review queue and claim-level provenance | https://github.com/atomicstrata/llm-wiki-compiler | github repo | medium-high | README; independently fetched; still needs code inspection for implementation quality |
+| Agent memory product | Letta Code frames persisted agent memory as different from session-based coding CLIs | https://github.com/letta-ai/letta-code | github repo | high | README/product repo; pair with docs/HN for community view |
+| Team agent memory | WUPHF uses per-agent notebook + shared workspace wiki and fresh sessions to avoid accumulating context | https://github.com/nex-crm/wuphf | github repo | medium-high | README; performance claims should be reproduced before treated as general |
+| Context engineering implementation | LangChain context-engineering repos implement write/select/compress/isolate and six context-fix techniques | https://github.com/langchain-ai/context_engineering | github repo | medium-high | Runnable notebooks; useful implementation reference |
 
 # Current Corrections / Evidence Gaps
 
 - Reddit analysis requirement is not yet satisfied. Direct extraction was blocked; only search snippets are available. Status: insufficient evidence.
 - Twitter/X analysis is partial. Karpathy's X summary was extracted, but broader X high-quality discussion remains to be collected.
-- GitHub issue/repo discussion is under-collected. WUPHF and Letta repos should be inspected next.
+- GitHub issue/repo discussion is improved but still incomplete. This pass added Mem0, LettaBot, Letta Code, WUPHF, llm-wiki-compiler, and LangChain context-engineering repos/issues. Next GitHub pass should inspect code paths and additional discussions, not just READMEs/issues.
 - No independent benchmark has yet shown LLM Wiki superiority over RAG on longitudinal research workflows. This remains speculative.
