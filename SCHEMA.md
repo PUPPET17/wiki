@@ -12,6 +12,8 @@ LLM Wiki / Agent Memory / Context Compression / Knowledge Integration research a
 - Do not treat Twitter/X, Reddit, or Hacker News discussion as verified fact unless cross-validated by papers, docs, repos, or working implementations.
 - If evidence is missing, write: unknown / insufficient evidence / speculative.
 - Raw sources are immutable; corrections go into wiki pages.
+- Raw sources must preserve parsed original/source text whenever accessible, not only source_url and extracted claims. A raw file may include analysis notes, but those must appear after the preserved source text and be clearly labeled.
+- If extraction is blocked, truncated, or only summarized by tooling, mark `raw_preservation` and `extraction_status` explicitly and schedule a later full-text/PDF/API retrieval pass.
 - Every update must append to log.md.
 
 ## Required Research Document Sections
