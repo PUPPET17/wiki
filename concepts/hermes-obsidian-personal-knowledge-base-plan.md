@@ -1,7 +1,7 @@
 ---
 title: Hermes Obsidian Personal Knowledge Base Plan
 created: 2026-05-14
-updated: 2026-05-14
+updated: 2026-05-16
 type: concept
 tags: [agent-memory, llm-wiki, obsidian, hermes, knowledge-integration, local-first, memory-architecture, retrieval, indexing, mvp, personal-ai-os]
 sources: [concepts/llm-wiki-agent-memory-research-framework.md, raw/articles/karpathy-llm-wiki-gist-2026.md, raw/github/llm-wiki-compiler-repo-readme.md, raw/github/wuphf-repo-readme.md, raw/github/mem0-issue-4573-memory-audit-junk.md, raw/github/letta-issue-652-per-conversation-context-scoping.md, raw/github/langchain-context-engineering-repo-readme.md, raw/github/langchain-how-to-fix-your-context-readme.md, raw/product-docs/openai-chatgpt-memory-2024-2025.md, raw/product-docs/letta-memory-2026.md, raw/product-docs/obsidian-uri-2026.md, raw/product-docs/obsidian-bases-2026.md, raw/product-docs/obsidian-web-clipper-2026.md, raw/product-docs/obsidian-properties-2026.md, raw/product-docs/hermes-agent-memory-docs-2026.md, raw/product-docs/hermes-agent-memory-providers-docs-2026.md, raw/github/obsidian-local-rest-api-readme.md, raw/github/obsidian-mcp-server-readme.md, raw/github/obsidian-dataview-docs-overview.md]
@@ -84,6 +84,89 @@ For higher-value notes:
 
 When Hermes retrieves a note and later writes a summary, it must not re-store the retrieved content as if the user said it again. This directly addresses feedback-loop amplification described in the mem0 audit. [raw/github/mem0-issue-4573-memory-audit-junk.md]
 
+# Single Source of Truth Boundary
+
+The knowledge base is meant to let an agent quickly enter the vault, locate evidence, and answer "what is true here?" without guessing. Therefore the system must distinguish canonical source documents, agent-authored knowledge, and rebuildable indexes.
+
+## Canonical layers
+
+| Layer | Canonical? | Mutable? | Purpose | Examples |
+|---|---:|---:|---|---|
+| Raw sources | Yes | No, except metadata correction | Evidence substrate. Every non-trivial claim must be traceable here. | Original article markdown, PDF file, screenshot, image, transcript, GitHub issue export, or a note pointing to an exact local storage path. |
+| Wiki notes | Yes, but derived from raw sources | Yes, reviewed edits | Agent/human-authored concepts, decisions, comparisons, queries, syntheses. | `concepts/*.md`, `comparisons/*.md`, `queries/*.md`, project decision notes. |
+| Logs | Yes | Append-only | Chronology of knowledge-base actions and source changes. | `log.md`, project logs, ingestion logs. |
+| User/project profile notes | Yes within their scope | Yes, stricter review | Durable user/project facts, preferences, conventions. | `00-system/user-profile.md`, `20-projects/*/project-memory.md`. |
+| Hermes built-in memory | No for corpus truth | Yes, tiny steering cache | Compact pointer/steering memory only. | Vault path, stable preferences, repeated corrections. |
+| Derived indexes | No | Rebuild-only | Retrieval acceleration. Must never be the only copy of knowledge. | SQLite FTS, BM25 index, vector store, graph projection. |
+| Published site | No | Generated | Read-only presentation surface. | VitePress/GitHub Pages output. |
+
+## Raw sources are immutable evidence
+
+Raw sources must be maintained separately from wiki/concept notes, following Karpathy's LLM Wiki pattern. Raw sources are not summaries. They are evidence records. A raw source may be:
+
+1. A preserved original or near-original text extraction, such as article markdown, paper text, transcript text, GitHub issue JSON/markdown, or official docs markdown.
+2. A binary/original artifact stored in the vault or repo, such as PDF, image, screenshot, audio, or downloaded HTML.
+3. A pointer note that records an exact local path, content hash, source URL, retrieval date, and access instructions when the artifact is too large or cannot be copied into the vault.
+
+A raw source may include `## Extraction Notes`, but those notes are commentary. They are not the raw source itself and must not replace preserved source content or artifact path.
+
+Allowed edits to raw source files:
+- Add or correct metadata.
+- Add missing artifact paths, hashes, retrieval timestamps, or extraction status.
+- Mark extraction as partial/blocked/truncated.
+- Add an erratum note that the capture was defective.
+
+Disallowed edits to raw source files:
+- Rewriting original source wording for clarity.
+- Deleting inconvenient source text.
+- Collapsing full source content into a summary while still marking it as raw.
+- Mixing synthesis claims into raw text without a clearly labeled analysis section.
+
+## Truth lookup order for agents
+
+When asked for a fact, Hermes should resolve truth in this order:
+
+1. Identify the active scope: topic, project, user, time range, and privacy boundary.
+2. Read the relevant index or topic map to locate candidate wiki notes.
+3. Read the wiki note for current synthesis, confidence, contested status, and source links.
+4. Follow source links to raw sources for verification of non-trivial claims.
+5. If the wiki and raw source conflict, raw source wins as evidence, but the wiki may contain later synthesis explaining the conflict.
+6. If no raw source supports a claim, answer with `insufficient evidence` or mark the claim as inference/speculation.
+7. If retrieved memories or previous assistant outputs contain a claim but no raw/user-confirmed source, do not treat it as truth.
+
+## One-writer rules by artifact type
+
+| Artifact | Who may write directly | Review requirement |
+|---|---|---|
+| Raw source artifact | Capture tooling or explicit user instruction | Metadata-only corrections may be direct; content replacement requires review. |
+| Concept/comparison/query note | Hermes or human | Direct patch allowed if source-backed; contested/high-impact changes need review note. |
+| User profile note | Human or Hermes with explicit confirmation | Must show diff; no silent update of sensitive personal facts. |
+| Project memory note | Hermes or human within active project scope | Direct patch allowed for stable conventions/decisions; ephemeral task state rejected. |
+| Procedures/playbooks | Hermes or human | Promote to Hermes skill only when reusable and verified. |
+| Derived index | Script/automation only | Rebuild from canonical markdown; never hand-edit. |
+| Published site | GitHub Actions only | Generated from repo state. |
+
+## Source identifiers
+
+Every raw source should have a stable `source_id` so wiki notes can cite sources even if filenames move.
+
+Format:
+
+```text
+src:<type>:<slug>:<year-or-date>
+```
+
+Examples:
+
+```text
+src:article:karpathy-llm-wiki-gist:2026
+src:paper:memgpt:2023
+src:github:mem0-issue-4573-memory-audit-junk:2026-05-14
+src:clip:obsidian-web-clipper:2026-05-14
+```
+
+Wiki notes may cite both `source_id` and path. Path is for agent navigation; ID is for durable reference.
+
 # Recommended Vault Layout
 
 Use one Obsidian vault for the personal knowledge base, ideally git-backed and local-first.
@@ -143,82 +226,243 @@ Recommendation: keep `/Users/a17/wiki` as the research repo for this topic, and 
 
 # Note Schemas
 
-## Research concept note
+Schema discipline is the bridge between Obsidian as a human note app and Hermes as an agentic knowledge operator. The schema should be strict enough for search, dashboards, lint, and automation, but not so complex that humans stop writing notes.
+
+## Global frontmatter fields
+
+Every managed note, except `README.md` and simple generated/publication files, should use YAML frontmatter.
+
+| Field | Required | Values | Meaning |
+|---|---:|---|---|
+| `id` | Yes | stable slug-like ID | Durable reference independent of filename. |
+| `title` | Yes | string | Human-readable title. |
+| `type` | Yes | `raw_source`, `concept`, `comparison`, `query`, `decision`, `project_memory`, `user_profile`, `session_summary`, `procedure`, `dashboard`, `index` | Note class. |
+| `created` | Yes | `YYYY-MM-DD` | Creation date. |
+| `updated` | Yes | `YYYY-MM-DD` | Last meaningful content update. |
+| `status` | Yes | `draft`, `active`, `review`, `contested`, `superseded`, `archived` | Lifecycle state. |
+| `tags` | Yes | list | Search/dashboard tags. |
+| `scope` | Yes | object | User/project/topic/channel boundary. |
+| `visibility` | Yes | `private`, `internal`, `public` | Publication and automation boundary. |
+| `agent_read` | Yes | boolean | Whether agents may read by default. |
+| `agent_write` | Yes | `never`, `propose`, `direct` | Whether agents may write directly. |
+| `sources` | Conditional | list of source IDs or paths | Required for source-backed wiki notes. |
+| `confidence` | Conditional | `low`, `medium`, `high` | Required for concepts/comparisons/queries/decisions. |
+| `contested` | Conditional | boolean | Required for concepts/comparisons/queries/decisions. |
+
+## Raw source note schema
+
+Raw sources are immutable evidence records. They must either contain preserved source text or point to an exact artifact path that Hermes can locate and read with appropriate tools.
 
 ```yaml
 ---
-title: Human Title
-created: YYYY-MM-DD
-updated: YYYY-MM-DD
-type: concept
-tags: [agent-memory, obsidian, hermes]
-project: hermes-personal-kb
-status: draft | active | archived
-confidence: low | medium | high
-contested: true | false
-sources:
-  - 90-sources/web/source-note.md
+id: src:article:example-source:2026-05-16
+title: Example Source Title
+type: raw_source
+created: 2026-05-16
+updated: 2026-05-16
+status: active
+tags: [raw-source, article]
 scope:
   users: [a17]
-  projects: [hermes-agent]
+  projects: []
+  topics: [agent-memory]
   channels: []
-review:
-  last_reviewed: YYYY-MM-DD
-  next_review: YYYY-MM-DD
----
-```
-
-## Raw source note
-
-```yaml
----
-title: Source Title
-created: YYYY-MM-DD
-source_url: https://example.com
-source_type: article | paper | docs | github | conversation | clip
-captured_by: obsidian-clipper | hermes-web | manual | pdf-parser
-raw_preservation: full_text | tool_parsed_or_summarized_text | extraction_blocked
-extraction_status: complete | partial | blocked | needs_pdf_pass
-hash: sha256:...
+visibility: public
+agent_read: true
+agent_write: propose
+source:
+  source_url: https://example.com/article
+  original_artifact_path: raw/assets/example-source.html
+  local_text_path: raw/articles/example-source.md
+  media_paths: []
+  captured_by: hermes-web | obsidian-clipper | manual | pdf-parser | screenshot | api
+  captured_at: 2026-05-16T00:00:00Z
+  content_sha256: sha256:...
+  license: unknown
+  access_notes: public web page
+raw_preservation: full_text | full_binary | full_html | full_pdf_text | pointer_only | tool_parsed_or_summarized_text | extraction_blocked
+extraction_status: complete | partial | blocked | needs_pdf_pass | needs_manual_review
 reliability: high | medium | low
 ---
 ```
 
-Required sections:
+Required body sections:
 
 ```markdown
 # Source Title
 
 ## Source Metadata
 
+## Original Artifact / Storage Path
+
+- original_artifact_path: raw/assets/example-source.html
+- local_text_path: raw/articles/example-source.md
+- media_paths: []
+
 ## Parsed Source Text
 
+Preserved source text goes here. If source is binary-only, write where the binary lives and how an agent should read it.
+
 ## Extraction Notes
+
+Only commentary about extraction quality, missing sections, blocked access, or parser limitations.
 ```
 
-## Project decision note
+## Concept note schema
+
+Concept notes are agent/human-authored synthesis pages. They are mutable, but every factual claim should trace to raw sources.
 
 ```yaml
 ---
-title: Decision Title
-type: decision
-project: hermes-agent
-created: YYYY-MM-DD
-status: proposed | accepted | superseded
-supersedes: []
-sources: []
+id: concept:hermes-obsidian-personal-kb
+title: Hermes Obsidian Personal Knowledge Base Plan
+type: concept
+created: 2026-05-14
+updated: 2026-05-16
+status: active
+tags: [agent-memory, obsidian, hermes]
+scope:
+  users: [a17]
+  projects: [wiki]
+  topics: [agent-memory, personal-knowledge-base]
+  channels: []
+visibility: public
+agent_read: true
+agent_write: direct
+sources:
+  - src:article:karpathy-llm-wiki-gist:2026
+  - raw/articles/karpathy-llm-wiki-gist-2026.md
+confidence: medium
+contested: true
+review:
+  last_reviewed: 2026-05-16
+  next_review: 2026-06-16
 ---
 ```
 
-Required sections:
+Required body sections:
+
+```markdown
+# Title
+
+# Executive Summary
+# Claims
+# Architecture / Analysis
+# Open Questions
+# Source Map
+# Current Corrections / Evidence Gaps
+```
+
+## Decision note schema
+
+```yaml
+---
+id: decision:project:short-title:2026-05-16
+title: Decision Title
+type: decision
+created: 2026-05-16
+updated: 2026-05-16
+status: accepted
+scope:
+  users: [a17]
+  projects: [hermes-agent]
+  topics: []
+  channels: []
+visibility: private
+agent_read: true
+agent_write: propose
+sources: []
+confidence: medium
+contested: false
+supersedes: []
+superseded_by: null
+---
+```
+
+Required body sections:
 
 ```markdown
 # Decision
 ## Context
-## Options
+## Options Considered
 ## Decision
 ## Consequences
+## Evidence / Sources
 ## Review Date
+```
+
+## Session summary schema
+
+Session notes are not raw memory dumps. They are filtered summaries of durable outcomes.
+
+```yaml
+---
+id: session:2026-05-16-hermes-obsidian-kb
+title: Hermes Obsidian KB Planning Session
+type: session_summary
+created: 2026-05-16
+updated: 2026-05-16
+status: active
+tags: [session, hermes, obsidian]
+scope:
+  users: [a17]
+  projects: [wiki]
+  topics: [personal-knowledge-base]
+  channels: [cli]
+visibility: private
+agent_read: true
+agent_write: propose
+sources: []
+contains_personal_data: true
+retention: keep | delete_after_30d | archive
+---
+```
+
+Required body sections:
+
+```markdown
+# Session Summary
+## Durable Outcomes
+## Decisions
+## Open Questions
+## Rejected / Do Not Store
+## Follow-up Actions
+```
+
+## Procedure note schema
+
+```yaml
+---
+id: procedure:ingest-source
+title: Ingest Source Procedure
+type: procedure
+created: 2026-05-16
+updated: 2026-05-16
+status: active
+tags: [procedure, ingestion]
+scope:
+  users: [a17]
+  projects: [wiki]
+  topics: [agent-memory]
+  channels: []
+visibility: public
+agent_read: true
+agent_write: direct
+sources: []
+promote_to_skill: false
+---
+```
+
+Required body sections:
+
+```markdown
+# Procedure
+## Trigger
+## Inputs
+## Steps
+## Validation
+## Failure Modes
+## Commit Message
 ```
 
 # Hermes Roles
@@ -480,26 +724,147 @@ Measure:
 - time to update knowledge after new evidence
 - number of rejected junk memories
 
-# Privacy and Safety Model
+# Automation and Permission Boundary
 
-Default-deny automation for sensitive folders.
+Automation must be explicit because the knowledge base is both a personal workspace and an agent-readable truth substrate.
 
-Recommended `.agentignore` semantics:
+## Permission levels
+
+| Level | Meaning | Allowed examples |
+|---|---|---|
+| `read_public` | Agent may read public/research notes. | `README.md`, `concepts/`, public raw sources. |
+| `read_scoped` | Agent may read only when current task scope matches note scope. | Project memory, session summaries. |
+| `read_explicit` | Agent may read only after explicit user instruction. | `99-private/`, sensitive personal notes. |
+| `write_direct` | Agent may patch directly and commit. | Index/log updates, non-sensitive source-backed concept edits. |
+| `write_propose` | Agent may create a patch/proposal, but user must approve. | User profile, project decisions, contested claims. |
+| `write_forbidden` | Agent must not write. | Raw artifact content, private secrets, generated indexes by hand. |
+
+## Folder policy
+
+| Folder | Read default | Write default | Publish default | Notes |
+|---|---|---|---|---|
+| `raw/` / `90-sources/` | allowed | propose for metadata, forbidden for source content rewrite | allowed only if visibility public | Immutable evidence. |
+| `concepts/`, `comparisons/`, `queries/` | allowed | direct if source-backed | allowed if visibility public | Main wiki layer. |
+| `20-projects/` | scoped | propose/direct depending on project | private by default | Avoid leaking active work. |
+| `50-sessions/` | scoped | propose | private by default | Summaries only, not transcript dumps. |
+| `00-system/user-profile.md` | scoped | propose only | never | Personal facts require confirmation. |
+| `40-procedures/` | allowed | direct for non-sensitive procedures | allowed if visibility public | Promote stable procedures to skills. |
+| `99-private/` | explicit only | forbidden unless explicit | never | Default-deny. |
+| `.hermes-kb/`, vector stores, search indexes | tool/script only | rebuild-only | never | Derived artifacts. |
+
+## Automation classes
+
+Safe automation:
+- Rebuild search indexes from markdown.
+- Lint missing frontmatter, broken links, missing raw source fields.
+- Generate read-only dashboards.
+- Append log entries for agent actions.
+- Draft review reports.
+
+Needs review:
+- Editing user profile or personal facts.
+- Marking a contested claim as resolved.
+- Changing confidence from low/medium to high.
+- Deleting or archiving notes.
+- Moving notes across visibility boundaries.
+- Publishing any private/project/session content.
+
+Forbidden without explicit instruction:
+- Reading secrets or private folders.
+- Writing API keys, tokens, passwords, or credentials into notes.
+- Replacing raw source content with summaries.
+- Re-extracting recalled memory as if it were new user input.
+- Publishing `99-private/`, `.obsidian/workspace*.json`, `.hermes-kb/`, session transcripts, or secrets-adjacent notes.
+
+## `.agentignore` / publication exclusion baseline
 
 ```text
 99-private/**
+50-sessions/**
+20-projects/**/secrets/**
 **/.obsidian/workspace*.json
 **/.trash/**
 **/*secret*
 **/*password*
+**/*token*
+.hermes-kb/**
+node_modules/**
+.vitepress/cache/**
+.vitepress/dist/**
 ```
 
-Rules:
-- Hermes may search private folders only when explicitly instructed.
-- No secrets/API keys in Obsidian notes unless encrypted or intentionally stored in a password manager note excluded from automation.
-- Personal facts require higher scrutiny than source facts.
-- Memory edits about the user should be visible and reversible.
-- Publication workflows must exclude private folders and session notes unless explicitly allowed.
+## Human confirmation triggers
+
+Hermes must ask for confirmation or produce a proposal-only patch when:
+
+- The edit changes a personal preference, identity fact, relationship, medical/financial/legal fact, or other sensitive personal data.
+- The edit changes the system's conclusion about a contested or high-impact claim.
+- The edit deletes, archives, or supersedes a note.
+- The edit changes raw source content rather than metadata.
+- The edit makes private/scoped content public.
+- The task scope does not match the note's `scope` field.
+
+# MVP Operating Loop
+
+The MVP should prove that an agent can enter the vault, find truth, update knowledge, and leave an auditable trail.
+
+## MVP scope
+
+Use `/Users/a17/wiki` as the first standalone Obsidian/VitePress research vault. Do not migrate the full personal vault yet.
+
+MVP includes:
+- Raw source capture under `raw/`.
+- Concept synthesis under `concepts/`.
+- `index.md` and `log.md` maintenance.
+- Git commits for every completed knowledge change.
+- VitePress publication only for public/research-safe notes.
+- Manual review for private, personal, contested, or destructive edits.
+
+MVP excludes:
+- Vector DB.
+- Graph DB.
+- Automatic personal memory extraction.
+- Automatic publication of project/session/private notes.
+- Autonomous deletion/archive.
+- Obsidian REST/MCP dependency unless filesystem-first editing fails.
+
+## MVP ingest loop
+
+1. User provides a source URL/file/path or places a clip in inbox.
+2. Hermes creates a raw source note or artifact pointer with `type: raw_source`, `source_id`, storage path, hash, capture date, preservation status, and extraction status.
+3. Hermes verifies that the raw source is readable from the recorded path.
+4. Hermes extracts candidate claims, entities, and open questions into an analysis section or separate draft.
+5. Hermes searches existing concepts before creating new pages.
+6. Hermes patches the most relevant concept/query/decision note with source-backed claims.
+7. Hermes updates `index.md` if a new durable page was created.
+8. Hermes appends `log.md` with what changed and why.
+9. Hermes runs lint/build checks.
+10. Hermes commits and pushes.
+
+## MVP truth lookup loop
+
+1. Parse the user question into topic/project/scope.
+2. Search `index.md`, filenames, headings, and tags.
+3. Read candidate concept notes.
+4. Follow cited raw source paths for important factual claims.
+5. Answer with citations and confidence.
+6. If evidence is missing, say `insufficient evidence` and optionally create a query note.
+
+## MVP session-to-knowledge loop
+
+1. Summarize the session only if it contains durable outcomes.
+2. Extract decisions, stable preferences, reusable procedures, open research questions, and source additions.
+3. Put rejected ephemera into `## Rejected / Do Not Store`.
+4. Update project/concept/procedure notes only when the extracted item is durable.
+5. Promote repeated procedures to Hermes skills when verified.
+
+## MVP done criteria
+
+- One new source can be ingested end-to-end with raw source preservation and a source-backed concept update.
+- A fresh Hermes session can answer a question by reading the vault and following raw source links.
+- Lint catches missing raw source metadata, missing frontmatter, and missing source links.
+- VitePress build succeeds after the update.
+- Git history clearly shows what changed.
 
 # Implementation Plan
 

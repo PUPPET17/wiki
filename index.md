@@ -5,12 +5,12 @@
 
 ## Core Research Documents
 - [[llm-wiki-agent-memory-research-framework]] — Stable evolving synthesis for LLM Wiki / Agent Memory / Context Compression / Knowledge Integration; updated with GitHub issue/repo evidence on memory quality, context scoping, and implementation projects.
-- [[hermes-obsidian-personal-knowledge-base-plan]] — Practical implementation plan for a Hermes-operated, Obsidian-facing personal knowledge base using markdown+git as canonical memory.
+- [[hermes-obsidian-personal-knowledge-base-plan]] — Practical implementation plan for a Hermes-operated, Obsidian-facing personal knowledge base using markdown+git as canonical memory; now includes single-source-of-truth boundaries, strict note schemas, automation permissions, and MVP operating loops.
 
 ## Entities
 
 ## Concepts
-- [[hermes-obsidian-personal-knowledge-base-plan]] — Hermes + Obsidian architecture, schemas, workflows, privacy model, and phased implementation plan.
+- [[hermes-obsidian-personal-knowledge-base-plan]] — Hermes + Obsidian architecture, raw-source truth boundaries, strict schemas, automation permissions, MVP workflows, privacy model, and phased implementation plan.
 
 ## Comparisons
 

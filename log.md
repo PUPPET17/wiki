@@ -25,6 +25,12 @@
 - Created concepts/hermes-obsidian-personal-knowledge-base-plan.md.
 - Plan recommendation: keep markdown+git as canonical memory, use Obsidian as the human review/editing workspace, and use Hermes as ingestion/retrieval/synthesis/lint automation. Keep Hermes built-in memory bounded to compact steering facts; store larger personal/research/project knowledge in Obsidian.
 
+## [2026-05-16] refine | Hermes + Obsidian KB truth boundaries
+- Expanded concepts/hermes-obsidian-personal-knowledge-base-plan.md with a single-source-of-truth model: immutable raw sources as evidence, mutable wiki notes as synthesis, append-only logs, bounded Hermes memory as steering cache, and derived indexes as rebuildable non-canonical artifacts.
+- Strengthened raw source rules: raw resources must be original text/artifact records or exact local storage paths that an agent can locate and read; summaries cannot replace raw evidence.
+- Added strict global and per-note schemas for raw_source, concept, decision, session_summary, and procedure notes.
+- Added automation/permission boundaries, folder policies, human-confirmation triggers, and MVP ingest/truth-lookup/session-to-knowledge loops.
+
 ## [2026-05-14] upgrade | Raw source full-text pass
 - Upgraded 7 arXiv paper raw sources to `raw_preservation: full_pdf_text` using arXiv PDFs + PyMuPDF page text extraction: MemGPT, Generative Agents, CoALA, RAG Survey, RAPTOR, Self-RAG, MemoRAG.
 - Upgraded 8 web/blog/product sources to `raw_preservation: full_html_article_text_candidate` using readability-lxml + html2text. These are candidate full article text because site-rendered dynamic content may still omit hidden sections.
