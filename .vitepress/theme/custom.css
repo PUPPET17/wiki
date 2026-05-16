@@ -1,0 +1,6 @@
+.vp-doc p,
+.vp-doc li,
+.vp-doc td,
+.vp-doc blockquote {
+  overflow-wrap: anywhere;
+}

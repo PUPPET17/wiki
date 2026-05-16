@@ -2,7 +2,7 @@
 source_url: https://news.ycombinator.com/item?id=37894403
 fetched_url: https://hacker-news.firebaseio.com/v0/item/37894403.json
 source_type: hn
-author: HN: MemGPT: Towards LLMs as Operating Systems
+author: "HN: MemGPT: Towards LLMs as Operating Systems"
 source_date: 2023-10-15
 ingested: 2026-05-14
 sha256: c843f35c82633d579ccd079b4b729b42bcd81a00740c3d98159e4deb35fb9c02

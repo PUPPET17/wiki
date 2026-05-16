@@ -1,4 +1,4 @@
-name: Deploy Docsify to GitHub Pages
+name: Deploy VitePress to GitHub Pages
 
 on:
   push:
@@ -6,10 +6,10 @@ on:
       - main
     paths:
       - "**/*.md"
-      - "index.html"
-      - "_sidebar.md"
-      - ".nojekyll"
-      - ".github/workflows/deploy-docsify.yml"
+      - "package.json"
+      - "package-lock.json"
+      - ".vitepress/**"
+      - ".github/workflows/deploy-vitepress.yml"
   workflow_dispatch:
 
 permissions:
@@ -23,33 +23,31 @@ concurrency:
 
 jobs:
   build:
-    name: Build Docsify site
+    name: Build VitePress site
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Prepare static Docsify artifact
-        run: |
-          set -euo pipefail
-          mkdir -p _site
-          rsync -av \
-            --exclude='.git' \
-            --exclude='.github' \
-            --exclude='_site' \
-            ./ _site/
-          touch _site/.nojekyll
-          test -f _site/index.html
-          test -f _site/README.md
-          test -f _site/_sidebar.md
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build with VitePress
+        run: npm run docs:build
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: _site
+          path: .vitepress/dist
 
   deploy:
     name: Deploy to GitHub Pages

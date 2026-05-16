@@ -2,7 +2,7 @@
 source_url: https://news.ycombinator.com/item?id=46294274
 fetched_url: https://hacker-news.firebaseio.com/v0/item/46294274.json
 source_type: hn
-author: HN: Letta Code
+author: "HN: Letta Code"
 source_date: 2025
 ingested: 2026-05-14
 sha256: a47c0e51e1230ddb9c9549a6cc8758d9c538fbfb480e7439c6d2003fad5ed6c6
