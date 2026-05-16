@@ -8,6 +8,11 @@ export default defineConfig({
   lastUpdated: true,
   ignoreDeadLinks: true,
   srcExclude: ['raw/**'],
+  markdown: {
+    config: (md) => {
+      md.options.html = false
+    }
+  },
   locales: {
     root: {
       label: 'English',

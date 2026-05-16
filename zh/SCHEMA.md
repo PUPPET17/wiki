@@ -1,39 +1,75 @@
-# Wiki Schema / 维护规范
+# 维基架构
 
-## Domain
+## 域名
+LLM Wiki / Agent Memory / Context Compression / Knowledge Integration 研究和实现框架。
 
-LLM Wiki / Agent Memory / Context Compression / Knowledge Integration research and implementation framework.
+## 惯例
+- 文件名：小写、连字符、无空格。
+- 在迭代中保留稳定的文档结构。
+- 每个 wiki 页面都以 YAML frontmatter 开头。
+- 对每一个重要的主张都使用明确的来源引用。
+- 区分：事实、推论、推测、社区观点。
+- 不要将 Twitter/X、Reddit 或 Hacker News 讨论视为经过验证的事实，除非经过论文、文档、存储库或工作实现的交叉验证。
+- 如果证据缺失，请写下：未知/证据不足/推测。
+- 原始来源是不可变的；更正进入维基页面。
+- 原始来源必须在可访问时保留已解析的原始/源文本，而不仅仅是 source_url 和提取的声明。原始文件可能包含分析注释，但这些注释必须出现在保留的源文本之后并带有清晰的标签。
+- 如果提取被阻止、截断或仅通过工具进行汇总，请明确标记“raw_preservation”和“extraction_status”，并安排稍后的全文/PDF/API 检索过程。
+- 每次更新都必须附加到 log.md 中。
+- 每个文件更改都必须通过 wiki git 存储库同步：检查 `git status`，暂存相关文件，使用明确的消息提交，并在远程配置/可用时推送。如果无法推送，请报告本地提交哈希和原因。
 
-## 中文国际化约定
+## 所需的研究文档部分
+执行摘要
+核心论文
+关键概念
+卡帕蒂要点分析
+架构模式
+现有项目
+社区共识
+主要辩论
+失败案例
+工程限制
+实用的集成蓝图
+MVP计划
+推荐堆栈
+未决问题
+研究问题
+个人开发者机会
+源图
 
-- 英文文档保留在站点根目录，作为 canonical English content。
-- 中文文档放在 `/zh/` 下，作为新增 locale 内容。
-- 中文页面可以是翻译、摘要或中文维护入口；不得为了国际化而改写英文原文。
-- 新增中文页面时，应保持与英文页面相同的相对路径，便于 VitePress locale 切换。
+## 前题
+```yaml
+---
+title: Page Title
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+type: entity | concept | comparison | query | summary
+tags: [from taxonomy below]
+sources: [raw/...]
+confidence: high | medium | low
+contested: true | false
+---
+```
 
-## 核心维护原则
+## 标签分类
+- 主题：llm-wiki、代理内存、rag、上下文工程、知识整合、个人人工智能操作系统
+- 架构：内存架构、检索、压缩、索引、图形内存、向量内存、符号内存
+- 证据：论文、博客、github、hn、reddit、推文、产品文档
+- 实现：原型、mvp、可扩展架构、本地优先、云优先
+- 分析：权衡、失败案例、机会、辩论
 
-- File names: lowercase, hyphens, no spaces.
-- Raw sources are immutable evidence; corrections go into wiki pages.
-- Raw sources must preserve parsed original/source text whenever accessible.
-- Every update must append to `log.md`.
-- Every completed file change should be committed locally; push only when explicitly requested.
-- Non-trivial claims should cite source-backed notes or raw sources.
-- Distinguish fact, inference, speculation, and community view.
+## 页面阈值
+- 当索赔影响架构、工程权衡或实施方向时，创建或更新概念页面。
+- 避免使用提及的页面，除非稳定的研究结构需要它们。
+- 明确标记源质量和可靠性。
 
-## Tag Taxonomy
+## 可靠性量表
+- 高：主要来源、论文、官方文档、可复制的存储库或直接作者声明。
+- 媒介：工程博客、作者参与的 HN 线程、包含技术细节的社区讨论。
+- 低：搜索结果片段、二级摘要、无法访问的 Reddit/Twitter 内容、营销文案、未经验证的声明。
 
-- topic: llm-wiki, agent-memory, rag, context-engineering, knowledge-integration, personal-ai-os
-- architecture: memory-architecture, retrieval, compression, indexing, graph-memory, vector-memory, symbolic-memory
-- evidence: paper, blog, github, hn, reddit, tweet, product-docs
-- implementation: prototype, mvp, scalable-architecture, local-first, cloud-first
-- analysis: tradeoff, failure-case, opportunity, debate
-
-## Update Policy
-
-When new evidence conflicts with existing content:
-
-1. Keep the old view under a dated correction note.
-2. Add the new evidence with source and date.
-3. Mark contested: true if unresolved.
-4. Update Source Map notes.
+## 更新政策
+当新证据与现有内容冲突时：
+1. 将旧视图保留在注明日期的更正说明下。
+2. 添加新证据及其来源和日期。
+3. 标记有争议：如果未解决，则为 true。
+4.更新源图注释。
