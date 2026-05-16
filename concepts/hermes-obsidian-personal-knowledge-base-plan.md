@@ -84,6 +84,20 @@ For higher-value notes:
 
 When Hermes retrieves a note and later writes a summary, it must not re-store the retrieved content as if the user said it again. This directly addresses feedback-loop amplification described in the mem0 audit. [raw/github/mem0-issue-4573-memory-audit-junk.md]
 
+## 6. Default-reject high-entropy transient state
+
+Negative memory filtering should include an entropy filter that rejects transient state by default. Here `entropy` does not mean Shannon entropy. It means information density that is low-value for future retrieval: short-lived, low-reuse, context-dependent, hard to interpret later, token-expensive, and likely to pollute retrieval.
+
+High-entropy memory candidates include:
+
+1. Shell/tool output and command logs. Do not store `Ran: npm install` plus raw output. Store only the durable resolution when one exists, such as `Resolution: package lock corruption caused install failure; deleting the lockfile fixed it`.
+2. Agent chain-of-thought or exploratory reasoning traces. Do not store `first I thought X, then maybe Y`. Store final reasoning, durable conclusions, and optionally rejected hypotheses when they are useful for future debugging.
+3. Repeated retrieval excerpts. Do not re-store paragraphs copied from retrieved notes or raw sources. This creates recursive amplification where future retrieval finds retrieval artifacts rather than original evidence.
+4. Conversational scaffolding. Avoid saving `user asked`, `assistant suggested`, `then explored` narration unless the conversation structure itself is the durable fact. Compress to the decision, for example `Decision: use filesystem-first integration`.
+5. Temporary operational state. Do not store `need to check later`, `maybe investigate`, or `could benchmark` unless the item is promoted into a TODO system, issue tracker, or review queue.
+
+The filter's default policy is reject-unless-durable. A memory candidate should pass only if it is a stable user preference, durable fact, accepted decision, reusable procedure, unresolved but tracked open question, or source-backed synthesis. Otherwise it belongs in ephemeral session context, not long-term memory.
+
 # Single Source of Truth Boundary
 
 The knowledge base is meant to let an agent quickly enter the vault, locate evidence, and answer "what is true here?" without guessing. Therefore the system must distinguish canonical source documents, agent-authored knowledge, and rebuildable indexes.
@@ -574,6 +588,7 @@ Use Hermes memory for:
 - Repeated corrections
 - High-value conventions
 - Pointers to canonical Obsidian vault/repo paths
+- Durable resolutions or procedures that would prevent repeated future debugging
 
 Do not use Hermes memory for:
 - Raw source text
@@ -582,8 +597,13 @@ Do not use Hermes memory for:
 - Completed task logs
 - Temporary TODOs
 - Detailed meeting notes
+- Shell/tool output or install/build logs
+- Agent chain-of-thought or exploratory reasoning traces
+- Repeated excerpts from retrieved notes, search results, or raw sources
+- Conversational scaffolding with no durable decision
+- Future-maybe operational state that is not tracked in a TODO system, issue tracker, or review queue
 
-Use Obsidian for those larger artifacts.
+Use Obsidian for larger artifacts, and use a review queue or issue tracker for unresolved operational follow-ups. If a candidate only explains what happened in a session but not what should be reused later, reject it from long-term memory.
 
 # Obsidian Integration Options
 
@@ -667,9 +687,10 @@ Use for human review dashboards:
 
 1. Export or summarize the session into `50-sessions/YYYY/YYYY-MM-DD-topic.md`.
 2. Extract only durable facts, decisions, procedures, and open questions.
-3. Reject ephemeral details and completed task logs.
-4. Update project/concept notes if needed.
-5. Promote stable procedures to Hermes skills when they are reusable.
+3. Run the entropy filter before writing anything durable: reject shell/tool output, chain-of-thought, repeated retrieval excerpts, conversational scaffolding, completed task logs, and future-maybe operational state.
+4. Keep only conclusions, accepted decisions, final reasoning, useful rejected hypotheses, reusable procedures, and tracked follow-ups.
+5. Update project/concept/procedure notes if needed.
+6. Promote stable procedures to Hermes skills when they are reusable.
 
 ## Recipe 4: Weekly memory audit
 
@@ -877,9 +898,10 @@ MVP excludes:
 
 1. Summarize the session only if it contains durable outcomes.
 2. Extract decisions, stable preferences, reusable procedures, open research questions, and source additions.
-3. Put rejected ephemera into `## Rejected / Do Not Store`.
-4. Update project/concept/procedure notes only when the extracted item is durable.
-5. Promote repeated procedures to Hermes skills when verified.
+3. Apply negative memory filtering with entropy default-reject: do not store shell/tool logs, chain-of-thought, repeated retrieval excerpts, conversational scaffolding, completed task traces, or untracked future-maybe state.
+4. Put rejected ephemera into `## Rejected / Do Not Store` only when useful for audit; otherwise omit it entirely.
+5. Update project/concept/procedure notes only when the extracted item is durable.
+6. Promote repeated procedures to Hermes skills when verified.
 
 ## MVP done criteria
 

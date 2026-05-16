@@ -49,3 +49,8 @@
   - README snapshots for mem0, Letta Code, WUPHF, llm-wiki-compiler, LangChain context_engineering, and LangChain how_to_fix_your_context.
 - Updated concepts/llm-wiki-agent-memory-research-framework.md with new GitHub-backed evidence on memory failure modes, context scoping, existing projects, ingestion quality gates, and Source Map rows.
 - Updated index.md summary.
+
+## [2026-05-16] update | Negative memory entropy filter
+- Added negative memory filtering rule to concepts/hermes-obsidian-personal-knowledge-base-plan.md: entropy means low future-retrieval value, not Shannon entropy.
+- Default policy: reject transient state unless it becomes a durable preference, fact, decision, reusable procedure, source-backed synthesis, or tracked follow-up.
+- Explicitly rejects shell/tool output logs, agent chain-of-thought, repeated retrieval excerpts, conversational scaffolding, completed task traces, and untracked future-maybe operational state.
