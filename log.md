@@ -29,6 +29,7 @@
 - Expanded concepts/hermes-obsidian-personal-knowledge-base-plan.md with a single-source-of-truth model: immutable raw sources as evidence, mutable wiki notes as synthesis, append-only logs, bounded Hermes memory as steering cache, and derived indexes as rebuildable non-canonical artifacts.
 - Strengthened raw source rules: raw resources must be original text/artifact records or exact local storage paths that an agent can locate and read; summaries cannot replace raw evidence.
 - Added strict global and per-note schemas for raw_source, concept, decision, session_summary, and procedure notes.
+- Added `source_derivation` for transformed sources such as OCR outputs, transcript cleanups, parsed PDFs, translated versions, normalized HTML extracts, and markdown cleanup passes.
 - Added automation/permission boundaries, folder policies, human-confirmation triggers, and MVP ingest/truth-lookup/session-to-knowledge loops.
 
 ## [2026-05-14] upgrade | Raw source full-text pass

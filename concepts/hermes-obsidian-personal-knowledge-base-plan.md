@@ -280,7 +280,10 @@ source:
   content_sha256: sha256:...
   license: unknown
   access_notes: public web page
-raw_preservation: full_text | full_binary | full_html | full_pdf_text | pointer_only | tool_parsed_or_summarized_text | extraction_blocked
+source_derivation:
+  derived_from: []
+  transformation: []
+raw_preservation: full_text | full_binary | full_html | full_pdf_text | pointer_only | transformed_text | tool_parsed_or_summarized_text | extraction_blocked
 extraction_status: complete | partial | blocked | needs_pdf_pass | needs_manual_review
 reliability: high | medium | low
 ---
@@ -307,6 +310,26 @@ Preserved source text goes here. If source is binary-only, write where the binar
 
 Only commentary about extraction quality, missing sections, blocked access, or parser limitations.
 ```
+
+## Source derivation for transformed sources
+
+Use `source_derivation` when a source note is not the original artifact but a transformed representation of another raw source. Examples include OCR outputs, transcript cleanups, parsed PDFs, translated versions, normalized HTML extracts, and markdown cleanup passes.
+
+```yaml
+source_derivation:
+  derived_from:
+    - src:pdf:memgpt-paper:2023
+  transformation:
+    - OCR
+    - markdown_cleanup
+```
+
+Rules:
+- `derived_from` must point to source IDs or paths for the upstream raw/original artifact.
+- `transformation` must list every meaningful processing step that changed representation or wording.
+- A transformed source is still evidence, but it is not the root evidence. Agents should follow `derived_from` when exact wording, layout, figures, or legal/provenance questions matter.
+- Translations must record source language and target language in `transformation` or `Extraction Notes`.
+- Cleanup-only transformations must not silently remove uncertainty, OCR errors, speaker labels, timestamps, page numbers, or source line/page references.
 
 ## Concept note schema
 
