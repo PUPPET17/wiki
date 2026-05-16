@@ -219,7 +219,8 @@ Obsidian Vault/
     skills-candidates/
     playbooks/
   50-sessions/
-    2026/
+    active/
+    archive/
   60-people/
   70-entities/
   80-attachments/
@@ -450,28 +451,77 @@ durable knowledge
 retrieval index
 ```
 
-Do not create a durable session note for every session. Create one only when the interaction crosses the memory extraction threshold below.
+Do not create a durable session note for every session. Create one only when the interaction crosses the memory extraction threshold below. Even then, session summaries are not permanently authoritative: session is a candidate-knowledge temporary container and interaction buffer, not long-term knowledge.
+
+## Memory class model
+
+Retention is determined by memory class, not by folder. Use four classes:
+
+| Class | Purpose | Lifecycle | Default retrieval |
+|---|---|---|---|
+| `canonical` | Core long-term knowledge | Permanent | Yes |
+| `semantic` | Distilled long-term experience | Long-term | Yes |
+| `operational` | Project runtime state | Medium-term | Scoped only |
+| `episodic` | Session-level process record | Short-term | Weak by default |
+
+Session notes should normally be `memory_class: episodic`. Their job is `interaction buffer -> extraction substrate`, not permanent conversational archive.
+
+## Canonicalization rule
+
+Promote durable items out of sessions as soon as practical:
+
+| Session content | Target location |
+|---|---|
+| Architecture decision | `decisions/` |
+| Stable workflow | `procedures/` |
+| Durable synthesis | `concepts/` |
+| Reusable investigation | `research/` |
+| Stable preference | `user-profile.md` |
+| Validated operational rule | project memory |
+
+Once promoted, the session's value and retrieval priority should decline. The session should retain only a `Canonicalized Items` pointer list.
+
+## Minimal session frontmatter
+
+Avoid excessive metadata and YAML bloat. Keep only operationally useful fields:
 
 ```yaml
 ---
-id: session:2026-05-16-hermes-obsidian-kb
-title: Hermes Obsidian KB Planning Session
+id: session:2026-05-16-hermes-memory-design
+title: Hermes Memory Design Session
 type: session_summary
+
 created: 2026-05-16
 updated: 2026-05-16
+
+memory_class: episodic
+
 status: active
-tags: [session, hermes, obsidian]
+
+retention:
+  mode: adaptive
+  half_life_days: 30
+  retrieval_weight: 1.0
+
+memory_stats:
+  retrieval_count: 0
+  citation_count: 0
+  promoted_items: 0
+
 scope:
-  users: [a17]
-  projects: [wiki]
-  topics: [personal-knowledge-base]
-  channels: [cli]
-visibility: private
-agent_read: true
-agent_write: propose
-sources: []
-contains_personal_data: true
-retention: keep | delete_after_30d | archive
+  projects:
+    - wiki
+  topics:
+    - memory-architecture
+
+contains:
+  decisions: true
+  procedures: true
+  source_analysis: true
+  transient_debugging: false
+
+canonicalized: false
+archive_candidate: false
 ---
 ```
 
@@ -481,18 +531,20 @@ Required body sections:
 # Session Summary
 ## Durable Outcomes
 ## Decisions
-## New Knowledge
-## Reusable Procedures
+## Procedures Validated
+## Sources Added
 ## Open Questions
-## Evidence Added
+## Canonicalized Items
 ## Rejected / Do Not Store
 ```
 
-Forbidden sections by default:
-- Transcript / record
+Forbidden sections/content by default:
+- Transcript dump / record
 - Chronological replay
-- Tool log
-- Chain-of-thought
+- Tool logs
+- Shell output spam
+- Chain-of-thought replay
+- Repeated retrieval/source excerpts
 
 ## Memory extraction threshold
 
@@ -515,6 +567,94 @@ Do not save a durable session note for:
 - Short QA.
 - Temporary planning.
 - Generic how-to help, such as `how do I install X`, unless it yields a reusable procedure or project convention.
+
+## Adaptive retention and half-life
+
+Session half-life does not mean deleting notes after 30 days. It means dynamically decaying retrieval priority while preserving auditability.
+
+Retention stages:
+
+1. Active: new session has `retrieval_weight: 1.0` and may participate in scoped retrieval.
+2. Decaying: after each `half_life_days`, set `retrieval_weight *= 0.5`. Keep the file, but do not proactively place it into context unless scoped retrieval needs it.
+3. Archive candidate: set `archive_candidate: true` when `retrieval_count == 0`, `citation_count == 0`, `canonicalized == true`, and age exceeds 90 days.
+4. Compression: archived sessions should be compressed from episodic record into semantic outcome. Example: `explored REST API; tested filesystem writes; benchmarked latency; decided filesystem-first` becomes `Outcome: filesystem-first integration selected for MVP stability`.
+5. Deletion: rare and requires human confirmation. Delete only if canonicalized, unreferenced, no inbound links, no project dependency, long-term retrieval count is 0, and there is no audit value.
+
+Reinforcement rule: session memory can strengthen as well as decay. If a session is retrieved or cited, increment `retrieval_count` or `citation_count` and add a small reinforcement bonus to `retrieval_weight`, bounded by 1.0. Valuable operational memory stays discoverable; noise naturally decays.
+
+## Retrieval policy for session memory
+
+Episodic sessions should not outrank canonical knowledge. Retrieval priority should be:
+
+1. Canonical concepts
+2. Decisions
+3. Procedures
+4. Project memory
+5. Semantic syntheses
+6. Active operational notes
+7. Episodic sessions
+8. Archived sessions
+
+This prevents session noise from contaminating long-term knowledge retrieval.
+
+## Canonicalization pipeline
+
+Session memory should not directly serve retrieval forever. Durable knowledge should move through:
+
+```text
+session
+    ↓
+extract durable items
+    ↓
+promote to canonical notes
+    ↓
+lower session importance
+```
+
+Example: a session note that records `Filesystem-first integration selected` should produce `decisions/filesystem-first-architecture.md`. The session then keeps only:
+
+```markdown
+## Canonicalized Items
+- [[filesystem-first-architecture]]
+```
+
+The operational goal is:
+
+```text
+session entropy
+    ↓
+semantic extraction
+    ↓
+canonical knowledge
+```
+
+not storing more sessions forever.
+
+## Automation and metrics
+
+Automation may update `retrieval_count`, calculate decay, mark archive candidates, draft compression proposals, and suggest canonical extraction. Human confirmation is required for deletion, modifying canonical knowledge, publishing session content, and changing user profile facts.
+
+Track only minimal operational metrics:
+
+```yaml
+memory_metrics:
+  active_sessions:
+  archived_sessions:
+  avg_retrieval_count:
+  canonicalization_rate:
+  stale_session_ratio:
+  orphan_session_ratio:
+```
+
+Recommended session directory layout:
+
+```text
+50-sessions/
+  active/
+  archive/
+```
+
+Do not split sessions too deeply by year; sessions should not be the primary navigation layer. Long-term navigation belongs in `concepts/`, `decisions/`, `procedures/`, and `projects/`.
 
 ## Procedure note schema
 
@@ -631,6 +771,8 @@ Outputs:
 # Hermes Built-in Memory vs Obsidian
 
 Hermes built-in memory is intentionally bounded. Hermes documentation describes two core files, MEMORY.md and USER.md, injected at session start as a frozen snapshot with small character limits. That makes it useful for compact durable steering, not a full personal knowledge base.
+
+Session summaries also are not the full personal knowledge base. They are short-lived candidate-knowledge containers. Promote durable content into canonical concepts, decisions, procedures, project memory, source-backed syntheses, or stable preferences; then let the session half-life mechanism lower retrieval priority.
 
 Use Hermes memory for:
 - Stable user preferences
@@ -921,7 +1063,8 @@ MVP excludes:
 - Graph DB.
 - Automatic personal memory extraction.
 - Automatic publication of project/session/private notes.
-- Autonomous deletion/archive.
+- Autonomous deletion.
+- Autonomous archival without review of `archive_candidate` proposals.
 - Obsidian REST/MCP dependency unless filesystem-first editing fails.
 
 ## MVP ingest loop
@@ -949,12 +1092,14 @@ MVP excludes:
 ## MVP session-to-knowledge loop
 
 1. First apply the memory extraction threshold. Do not generate a durable session note merely because a session occurred.
-2. If the threshold is crossed, extract state transitions: durable outcomes, decisions, new knowledge, reusable procedures, open questions, and evidence added.
-3. Apply negative memory filtering with entropy default-reject: do not store shell/tool logs, chain-of-thought, repeated retrieval excerpts, conversational scaffolding, completed task traces, retry commands, or untracked future-maybe state.
-4. Do not include transcript, chronological replay, tool log, or chain-of-thought sections.
-5. Put rejected ephemera into `## Rejected / Do Not Store` only when useful for audit; otherwise omit it entirely.
-6. Update project/concept/procedure notes only when the extracted item is durable.
-7. Promote repeated procedures to Hermes skills when verified.
+2. If the threshold is crossed, create an `episodic` session summary under `50-sessions/active/` with adaptive retention metadata and the fixed body sections.
+3. Extract state transitions: durable outcomes, decisions, procedures validated, sources added, open questions, and canonicalized items.
+4. Apply negative memory filtering with entropy default-reject: do not store shell/tool logs, chain-of-thought, repeated retrieval excerpts, conversational scaffolding, completed task traces, retry commands, or untracked future-maybe state.
+5. Do not include transcript, chronological replay, tool log, shell output spam, or chain-of-thought sections.
+6. Canonicalize durable items quickly: decisions -> `decisions/`, workflows -> `procedures/`, syntheses -> `concepts/`, stable preferences -> `user-profile.md`, validated operational rules -> project memory.
+7. After canonicalization, update `promoted_items`, set or move toward `canonicalized: true`, and lower session retrieval priority through the half-life mechanism.
+8. During maintenance, decay `retrieval_weight` after each half-life; mark `archive_candidate: true` only when canonicalized, old, unused, and uncited; draft compression proposals instead of deleting.
+9. Promote repeated procedures to Hermes skills when verified.
 
 ## MVP done criteria
 

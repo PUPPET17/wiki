@@ -61,3 +61,11 @@
 - Updated session_summary structure to include Durable Outcomes, Decisions, New Knowledge, Reusable Procedures, Open Questions, Evidence Added, and Rejected / Do Not Store.
 - Added memory extraction threshold: create durable session notes only when architecture changes, durable preferences, reusable procedures, sources, decisions, long-term synthesis, or worthwhile unresolved questions emerge.
 - Explicitly excludes transcript, chronological replay, tool log, and chain-of-thought sections from stable session notes.
+
+## [2026-05-16] update | Session half-life lifecycle scheme
+- Added session half-life mechanism: sessions are candidate-knowledge temporary containers, not permanent long-term knowledge.
+- Added memory class model: canonical, semantic, operational, and episodic, with retrieval priority based on class rather than folder.
+- Added adaptive retention stages: active, decaying, archive candidate, compression, and rare deletion with human confirmation.
+- Added reinforcement model: retrieval/citation counts can increase retrieval weight so valuable operational memory persists while noise decays.
+- Added canonicalization pipeline: extract durable items from session notes, promote them to concepts/decisions/procedures/project memory/user profile, then lower session importance.
+- Added minimal memory metrics and recommended `50-sessions/active/` plus `50-sessions/archive/` layout.
