@@ -69,3 +69,10 @@
 - Added reinforcement model: retrieval/citation counts can increase retrieval weight so valuable operational memory persists while noise decays.
 - Added canonicalization pipeline: extract durable items from session notes, promote them to concepts/decisions/procedures/project memory/user profile, then lower session importance.
 - Added minimal memory metrics and recommended `50-sessions/active/` plus `50-sessions/archive/` layout.
+
+## [2026-05-16] update | Working Set Assembly standard v1
+- Added Working Set Assembly v1 as a deterministic pipeline from scoped retrieval results to a role-separated, token-budgeted, semantically compressed execution context.
+- Defined structured CandidateNote, Cluster, and WorkingSetOutput schemas to prevent free-text drift in intermediate artifacts.
+- Specified retrieve, rank, cluster, compress, deduplicate, isolate-by-role, and assemble steps with fixed scoring weights and token budget.
+- Added versioning, metrics, and `--debug-working-set` observability requirements.
+- Reinforced core principles: retrieval is exploration, cluster is the meaning unit, and working set is a runtime artifact rather than a storage structure.

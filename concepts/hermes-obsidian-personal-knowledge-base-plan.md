@@ -716,15 +716,18 @@ Guardrails:
 Input: user question or task.
 
 Output:
-- concise context pack: relevant notes, source snippets, confidence, unresolved gaps
+- structured working set: role-separated, token-budgeted, semantically compressed execution context
 - optional answer with citations
 
 Retrieval order:
 1. Current project/topic index
 2. Exact search over filenames/tags/headings
 3. Full-text/BM25 search
-4. Optional semantic search
-5. Raw source fallback
+4. Structured filters over tags/frontmatter
+5. Optional semantic search
+6. Raw source fallback
+
+After retrieval, use Working Set Assembly v1: retrieval is only candidate generation, clusters are the meaning units, and the final working set is a runtime artifact rather than a stored note.
 
 ## 3. Synthesis editor
 
@@ -870,10 +873,10 @@ Use for human review dashboards:
 ## Recipe 2: Ask Hermes a knowledge question
 
 1. Hermes identifies active scope: user/project/topic/timeframe.
-2. Hermes reads index notes and searches relevant folders.
-3. Hermes assembles context pack with citations and confidence.
-4. Hermes answers with source links.
-5. If the answer is reusable, Hermes asks or infers whether to save it as a query/concept note.
+2. Hermes retrieves candidates through lexical search, structured filters, and optional semantic search.
+3. Hermes ranks, clusters, compresses, deduplicates, and role-isolates results using Working Set Assembly v1.
+4. Hermes answers from the structured working set with source links.
+5. If the answer is reusable, Hermes asks or infers whether to save it as a query/concept note; the working set itself remains a runtime artifact, not a durable note.
 
 ## Recipe 3: Convert a session into durable knowledge
 
@@ -939,6 +942,252 @@ Use exact/BM25 for:
 - IDs
 - quotes
 - prices/numbers
+
+# Working Set Assembly Standard v1
+
+Working Set Assembly is a deterministic pipeline that transforms scoped retrieval results into a role-separated, token-budgeted, semantically compressed execution context for LLM reasoning.
+
+Goal: convert retrieval results into the minimal sufficient context for LLM reasoning. Retrieval is exploration, not consumption. The cluster, not the note, is the primary meaning unit. The working set is a runtime artifact, not a storage structure.
+
+Input:
+- `query`
+- `scope` such as project, topic, or user
+- `retrieval_results`
+
+Output:
+- structured `working_set`
+
+## Data structures
+
+All intermediate artifacts must be structured to avoid free-text drift.
+
+### CandidateNote
+
+```yaml
+id: string
+title: string
+type: concept | decision | session | source | procedure
+score: float
+content: string
+metadata:
+  project: string
+  tags: []
+  updated: date
+```
+
+### Cluster
+
+```yaml
+cluster_id: string
+theme: string
+notes: [CandidateNote]
+cluster_score: float
+```
+
+### WorkingSetOutput
+
+```yaml
+system_context: string
+project_context: string
+knowledge_context:
+  clusters: []
+evidence_context: []
+task_context: string
+token_budget:
+  system: int
+  project: int
+  knowledge: int
+  evidence: int
+```
+
+## Pipeline
+
+### Step 1 — Retrieve candidate notes
+
+Inputs:
+- `query`
+- `scope` such as project, topic, or user
+- index/search backend
+
+Rules:
+- Use three recall channels: lexical search such as BM25/grep, structured filters such as tags/frontmatter, and optional semantic search.
+- Output `candidate_notes[]`.
+- `topK = 30..80`; do not make candidate sets too large.
+- Every candidate must include metadata: `type`, `project`, and `updated`.
+
+### Step 2 — Rank with fixed scoring
+
+Use a versioned scoring function:
+
+```text
+ranking_version: v1.0
+
+score =
+  0.35 * relevance(query, note)
++ 0.20 * project_scope_match
++ 0.15 * recency_decay(note.updated)
++ 0.15 * citation_frequency(note)
++ 0.10 * canonicality(note.type)
+- 0.05 * redundancy_penalty
+```
+
+Canonicality weight order:
+
+```text
+decision > concept > procedure > source > session
+```
+
+Output a sorted candidate list and keep top 20..40.
+
+### Step 3 — Cluster into meaning units
+
+Goal: merge semantically nearby notes into theme blocks.
+
+Prefer rule clustering using:
+- tag overlap
+- shared entities
+- shared project
+- heading similarity
+
+Fallback:
+
+```text
+cluster_key = dominant_tag OR project OR embedding_similarity
+```
+
+Constraints:
+- cluster count <= 8
+- notes per cluster <= 10
+
+### Step 4 — Compress each cluster
+
+Transform each cluster from a collection of notes into a semantic summary unit:
+
+```markdown
+Cluster: <theme>
+
+Key Claims:
+- ...
+
+Key Decisions:
+- ...
+
+Key Evidence:
+- source refs
+
+Conflicts:
+- if any
+```
+
+Compression rules:
+- Delete repeated sentences.
+- Preserve conclusions, not process logs.
+- Preserve conflicts; do not average them away.
+- Preserve source pointers.
+
+### Step 5 — Deduplicate
+
+Goal: avoid context pollution through repeated content.
+
+Rules:
+1. Content-hash deduplication and similarity deduplication:
+
+```text
+if similarity(note_a, note_b) > 0.85:
+    keep higher canonicality
+```
+
+2. Semantic duplicate priority:
+
+```text
+decision > concept > cluster summary > session > raw
+```
+
+3. Cross-cluster deduplication: if cluster A and cluster B express the same fact, keep it once and turn the other occurrence into a reference pointer.
+
+### Step 6 — Isolate by role
+
+Fixed partitions:
+
+```yaml
+system_context: rules, constraints, safety
+project_context: current scoped project state
+knowledge_context: compressed clusters
+evidence_context: raw source snippets or quotes
+task_context: user query
+```
+
+Partition rules:
+- `system_context` does not come from retrieval; it is fixed prompt/rules.
+- `project_context` comes only from scoped notes; do not allow cross-project pollution.
+- `knowledge_context` contains only cluster compression output.
+- `evidence_context` contains minimal raw source snippets or quotes.
+
+### Step 7 — Assemble final context pack
+
+Fixed token budget:
+
+```text
+system:   10%
+project:  20%
+knowledge: 40%
+evidence: 20%
+task:     10%
+```
+
+Assembly rules:
+1. Order is fixed: system -> project -> knowledge -> evidence -> task.
+2. Evidence must be minimal: only necessary references, no full-text dumps, each item <= 3..8 lines.
+3. Knowledge uses only cluster summaries. Do not concatenate raw notes or dump sessions.
+4. If over budget, trim in this order:
+   - session-based content
+   - low-score clusters
+   - redundant evidence
+   - older notes
+
+## Maintenance and observability
+
+Version every stage so the pipeline remains reproducible:
+
+```yaml
+ranking_version: v1.0
+clustering_version: v1.0
+compression_version: v1.0
+```
+
+Record metrics:
+
+```yaml
+metrics:
+  retrieved_count:
+  clustered_count:
+  compressed_size:
+  final_tokens:
+  redundancy_rate:
+  evidence_ratio:
+```
+
+Debug mode must support `--debug-working-set` and output:
+- every step result
+- score breakdown
+- cluster formation
+- compression diff
+
+## MVP implementation
+
+Minimum viable implementation:
+1. BM25 retrieve top 30.
+2. Apply simple weighted score.
+3. Use tag-based clustering.
+4. Summarize each cluster with LLM or deterministic rules.
+5. Deduplicate by hash and similarity threshold.
+6. Apply fixed role partition.
+7. Truncate by token budget.
+
+Design principles:
+1. Retrieval is exploration, not consumption.
+2. Cluster is the meaning unit.
+3. Working set is a runtime artifact.
 
 # Evaluation Plan
 
