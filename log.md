@@ -54,3 +54,10 @@
 - Added negative memory filtering rule to concepts/hermes-obsidian-personal-knowledge-base-plan.md: entropy means low future-retrieval value, not Shannon entropy.
 - Default policy: reject transient state unless it becomes a durable preference, fact, decision, reusable procedure, source-backed synthesis, or tracked follow-up.
 - Explicitly rejects shell/tool output logs, agent chain-of-thought, repeated retrieval excerpts, conversational scaffolding, completed task traces, and untracked future-maybe operational state.
+
+## [2026-05-16] update | Memory pipeline and extraction threshold
+- Added memory pipeline: interaction -> working context -> temporary scratch -> candidate extraction -> entropy filter -> durable knowledge -> retrieval index.
+- Defined knowledge as compressed state transition, not interaction history.
+- Updated session_summary structure to include Durable Outcomes, Decisions, New Knowledge, Reusable Procedures, Open Questions, Evidence Added, and Rejected / Do Not Store.
+- Added memory extraction threshold: create durable session notes only when architecture changes, durable preferences, reusable procedures, sources, decisions, long-term synthesis, or worthwhile unresolved questions emerge.
+- Explicitly excludes transcript, chronological replay, tool log, and chain-of-thought sections from stable session notes.

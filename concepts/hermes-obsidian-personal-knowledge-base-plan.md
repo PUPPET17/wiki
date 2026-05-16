@@ -430,7 +430,27 @@ Required body sections:
 
 ## Session summary schema
 
-Session notes are not raw memory dumps. They are filtered summaries of durable outcomes.
+Session notes are not raw memory dumps. Knowledge is compressed state transition, not interaction history. The purpose of a session note is not to replay a transcript, chronology, tool log, or agent reasoning trace; it is to distill future-relevant state transitions from an interaction.
+
+Memory pipeline:
+
+```text
+interaction
+    ↓
+working context
+    ↓
+temporary scratch
+    ↓
+candidate extraction
+    ↓
+entropy filter
+    ↓
+durable knowledge
+    ↓
+retrieval index
+```
+
+Do not create a durable session note for every session. Create one only when the interaction crosses the memory extraction threshold below.
 
 ```yaml
 ---
@@ -461,10 +481,40 @@ Required body sections:
 # Session Summary
 ## Durable Outcomes
 ## Decisions
+## New Knowledge
+## Reusable Procedures
 ## Open Questions
+## Evidence Added
 ## Rejected / Do Not Store
-## Follow-up Actions
 ```
+
+Forbidden sections by default:
+- Transcript / record
+- Chronological replay
+- Tool log
+- Chain-of-thought
+
+## Memory extraction threshold
+
+A session should become a durable note only if at least one future-relevant state transition occurred.
+
+Save a session note when any of these are true:
+- Architecture changed.
+- Durable preference discovered.
+- Reusable procedure validated.
+- Source added.
+- Decision finalized.
+- Long-term research synthesis produced.
+- Unresolved question identified and worth tracking.
+
+Do not save a durable session note for:
+- One-off debug.
+- Retry command loops.
+- Casual brainstorming with no decision or reusable output.
+- Failed experiments with no reusable conclusion.
+- Short QA.
+- Temporary planning.
+- Generic how-to help, such as `how do I install X`, unless it yields a reusable procedure or project convention.
 
 ## Procedure note schema
 
@@ -685,12 +735,14 @@ Use for human review dashboards:
 
 ## Recipe 3: Convert a session into durable knowledge
 
-1. Export or summarize the session into `50-sessions/YYYY/YYYY-MM-DD-topic.md`.
-2. Extract only durable facts, decisions, procedures, and open questions.
-3. Run the entropy filter before writing anything durable: reject shell/tool output, chain-of-thought, repeated retrieval excerpts, conversational scaffolding, completed task logs, and future-maybe operational state.
-4. Keep only conclusions, accepted decisions, final reasoning, useful rejected hypotheses, reusable procedures, and tracked follow-ups.
-5. Update project/concept/procedure notes if needed.
-6. Promote stable procedures to Hermes skills when they are reusable.
+1. Check the memory extraction threshold before creating any durable note. Continue only if architecture changed, a durable preference was discovered, a reusable procedure was validated, a source was added, a decision was finalized, long-term research synthesis was produced, or a worthwhile unresolved question was identified.
+2. Treat the memory pipeline as: interaction -> working context -> temporary scratch -> candidate extraction -> entropy filter -> durable knowledge -> retrieval index.
+3. Extract future-relevant state transitions, not interaction history.
+4. Run the entropy filter before writing anything durable: reject shell/tool output, chain-of-thought, repeated retrieval excerpts, conversational scaffolding, completed task logs, retry loops, and future-maybe operational state.
+5. Keep only durable outcomes, decisions, new knowledge, reusable procedures, open questions, and evidence added.
+6. Use `## Rejected / Do Not Store` only for audit-worthy rejections; otherwise omit ephemera entirely.
+7. Update project/concept/procedure notes if needed.
+8. Promote stable procedures to Hermes skills when they are reusable.
 
 ## Recipe 4: Weekly memory audit
 
@@ -896,12 +948,13 @@ MVP excludes:
 
 ## MVP session-to-knowledge loop
 
-1. Summarize the session only if it contains durable outcomes.
-2. Extract decisions, stable preferences, reusable procedures, open research questions, and source additions.
-3. Apply negative memory filtering with entropy default-reject: do not store shell/tool logs, chain-of-thought, repeated retrieval excerpts, conversational scaffolding, completed task traces, or untracked future-maybe state.
-4. Put rejected ephemera into `## Rejected / Do Not Store` only when useful for audit; otherwise omit it entirely.
-5. Update project/concept/procedure notes only when the extracted item is durable.
-6. Promote repeated procedures to Hermes skills when verified.
+1. First apply the memory extraction threshold. Do not generate a durable session note merely because a session occurred.
+2. If the threshold is crossed, extract state transitions: durable outcomes, decisions, new knowledge, reusable procedures, open questions, and evidence added.
+3. Apply negative memory filtering with entropy default-reject: do not store shell/tool logs, chain-of-thought, repeated retrieval excerpts, conversational scaffolding, completed task traces, retry commands, or untracked future-maybe state.
+4. Do not include transcript, chronological replay, tool log, or chain-of-thought sections.
+5. Put rejected ephemera into `## Rejected / Do Not Store` only when useful for audit; otherwise omit it entirely.
+6. Update project/concept/procedure notes only when the extracted item is durable.
+7. Promote repeated procedures to Hermes skills when verified.
 
 ## MVP done criteria
 
