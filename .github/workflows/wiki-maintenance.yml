@@ -76,7 +76,7 @@ jobs:
 
           name_re = re.compile(r'^[a-z0-9][a-z0-9-]*\.md$')
           for path in root.rglob('*.md'):
-              if '.git' in path.parts or path.name in {'README.md', 'SCHEMA.md'}:
+              if '.git' in path.parts or path.name in {'README.md', 'SCHEMA.md', '_sidebar.md'}:
                   continue
               if path.name != path.name.lower() or ' ' in path.name or not name_re.match(path.name):
                   errors.append(f"Invalid markdown filename: {path}")

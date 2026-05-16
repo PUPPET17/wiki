@@ -19,6 +19,12 @@
 - Rewrote existing raw source files to include `## Parsed Source Text` sections from fetched/extracted markdown where accessible.
 - Important caveat: web_extract often returns capped/summarized markdown for long sources; these files are now marked `tool_parsed_or_summarized_text` where appropriate and should be upgraded with full PDF/API/browser extraction in later passes.
 
+## [2026-05-14] plan | Hermes + Obsidian personal knowledge base
+- Continued research on Obsidian integration options: Obsidian URI, Web Clipper, Properties/Bases, Dataview, Local REST API, MCP-style integrations, and Hermes memory docs.
+- Added 9 raw source files for Obsidian/Hermes integration evidence under raw/product-docs and raw/github.
+- Created concepts/hermes-obsidian-personal-knowledge-base-plan.md.
+- Plan recommendation: keep markdown+git as canonical memory, use Obsidian as the human review/editing workspace, and use Hermes as ingestion/retrieval/synthesis/lint automation. Keep Hermes built-in memory bounded to compact steering facts; store larger personal/research/project knowledge in Obsidian.
+
 ## [2026-05-14] upgrade | Raw source full-text pass
 - Upgraded 7 arXiv paper raw sources to `raw_preservation: full_pdf_text` using arXiv PDFs + PyMuPDF page text extraction: MemGPT, Generative Agents, CoALA, RAG Survey, RAPTOR, Self-RAG, MemoRAG.
 - Upgraded 8 web/blog/product sources to `raw_preservation: full_html_article_text_candidate` using readability-lxml + html2text. These are candidate full article text because site-rendered dynamic content may still omit hidden sections.

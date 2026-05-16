@@ -5,6 +5,7 @@
 
 * Concepts
   * [LLM Wiki / Agent Memory Research Framework](/concepts/llm-wiki-agent-memory-research-framework.md)
+  * [Hermes Obsidian Personal Knowledge Base Plan](/concepts/hermes-obsidian-personal-knowledge-base-plan.md)
 
 * Raw Sources
   * Articles
